@@ -154,7 +154,7 @@ export default function Settings() {
     setSigningOut(true)
     try {
       await signOutUser()
-      navigate('/')
+      navigate('/login')
     } catch (e) {
       console.error('[Settings] Sign out failed:', e)
     } finally {

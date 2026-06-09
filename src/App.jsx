@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext'
 import Dashboard from './pages/Dashboard'
 import Daily from './pages/Daily'
 import Calendar from './pages/Calendar'
@@ -12,28 +13,67 @@ import SummerCamp from './pages/SummerCamp'
 import Settings from './pages/Settings'
 import Export from './pages/Export'
 import EditProfile from './pages/EditProfile'
+import Login from './pages/Login'
 import BottomNav from './components/BottomNav'
 
-export default function App() {
+function LoadingScreen() {
   return (
-    <div className="min-h-screen pb-20">
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/daily" element={<Daily />} />
-        <Route path="/calendar" element={<Calendar />} />
-        <Route path="/sessions" element={<Sessions />} />
-        <Route path="/coach-notes" element={<CoachNotes />} />
-        <Route path="/performance" element={<Performance />} />
-        <Route path="/body" element={<Body />} />
-        <Route path="/videos" element={<Videos />} />
-        <Route path="/weekly-review" element={<WeeklyReview />} />
-        <Route path="/summer-camp" element={<SummerCamp />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/edit-profile" element={<EditProfile />} />
-        <Route path="/export" element={<Export />} />
-      </Routes>
-      <BottomNav />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin mx-auto" />
+        <p className="text-sm text-gray-500 mt-4">Loading...</p>
+      </div>
     </div>
+  )
+}
+
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <LoadingScreen />
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
+}
+
+export default function App() {
+  const { user, loading } = useAuth()
+
+  // Show loading screen while auth state is being determined
+  if (loading) {
+    return <LoadingScreen />
+  }
+
+  return (
+    <>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" replace />} />
+
+        {/* Protected routes */}
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/daily" element={<ProtectedRoute><Daily /></ProtectedRoute>} />
+        <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+        <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
+        <Route path="/coach-notes" element={<ProtectedRoute><CoachNotes /></ProtectedRoute>} />
+        <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
+        <Route path="/body" element={<ProtectedRoute><Body /></ProtectedRoute>} />
+        <Route path="/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
+        <Route path="/weekly-review" element={<ProtectedRoute><WeeklyReview /></ProtectedRoute>} />
+        <Route path="/summer-camp" element={<ProtectedRoute><SummerCamp /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/export" element={<ProtectedRoute><Export /></ProtectedRoute>} />
+      </Routes>
+
+      {/* Show BottomNav only for protected routes (not login page) */}
+      {user && <BottomNav />}
+    </>
   )
 }
