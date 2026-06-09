@@ -1,0 +1,406 @@
+import { useState, useEffect } from 'react'
+import {
+  TrendingUp, Target, Star, Calendar, Clock, RefreshCw,
+  MessageSquare, Award, Lightbulb, ChevronLeft, ChevronRight, Save,
+} from 'lucide-react'
+import { weeklyReviewService } from '../services/weeklyReviewService'
+import { useAuth } from '../contexts/AuthContext'
+
+function getWeekRange(weekStartStr) {
+  const ws = new Date(weekStartStr + 'T00:00:00')
+  const we = new Date(ws)
+  we.setDate(we.getDate() + 6)
+  const startFmt = ws.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const endFmt = we.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return `${startFmt} — ${endFmt}`
+}
+
+function formatDateLabel(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+function formatTime(totalSeconds) {
+  if (!totalSeconds) return '--'
+  const mins = Math.floor(totalSeconds / 60)
+  const secs = (totalSeconds % 60).toFixed(2)
+  return mins > 0 ? `${mins}:${secs.padStart(5, '0')}` : `${secs}s`
+}
+
+export default function WeeklyReview() {
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const [reviewLoading, setReviewLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [reviews, setReviews] = useState([])
+  const [currentReview, setCurrentReview] = useState(null)
+  const [saveStatus, setSaveStatus] = useState('')
+
+  // Week navigation
+  const [weekStart, setWeekStart] = useState(() => {
+    const d = new Date()
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+    return new Date(d.setDate(diff)).toISOString().slice(0, 10)
+  })
+
+  // Manual fields
+  const [form, setForm] = useState({
+    bestMoment: '',
+    nextWeekFocus: '',
+    parentSummary: '',
+  })
+
+  // Auto-aggregated data (stale during editing)
+  const [autoData, setAutoData] = useState(null)
+
+  // Load review list
+  useEffect(() => {
+    if (!user) return
+    loadReviews()
+  }, [user])
+
+  // Load specific week when weekStart changes
+  useEffect(() => {
+    if (!user || !weekStart) return
+    loadWeekReview(weekStart)
+  }, [user, weekStart])
+
+  const loadReviews = async () => {
+    setError('')
+    try {
+      const all = await weeklyReviewService.list({}, user.uid)
+      setReviews(all)
+    } catch (e) {
+      setError('Failed to load reviews. Check your connection or Firebase config.')
+      console.error('[WeeklyReview] Failed to load:', e)
+    }
+  }
+
+  const loadWeekReview = async (wkStart) => {
+    try {
+      const existing = await weeklyReviewService.getByWeek(wkStart, user.uid)
+      if (existing) {
+        const d = existing.data
+        setCurrentReview(existing)
+        setForm({
+          bestMoment: d.bestMoment || '',
+          nextWeekFocus: d.nextWeekFocus || '',
+          parentSummary: d.parentSummary || '',
+        })
+      } else {
+        setCurrentReview(null)
+        setForm({ bestMoment: '', nextWeekFocus: '', parentSummary: '' })
+      }
+    } catch {
+      setCurrentReview(null)
+    }
+  }
+
+  const autoGenerate = async () => {
+    if (!user || !weekStart) return
+    setReviewLoading(true)
+    setError('')
+    try {
+      const stats = await weeklyReviewService.autoGenerateStats(weekStart, user.uid)
+      setAutoData(stats)
+      setSaveStatus('Auto-generated — click Save to store')
+    } catch (e) {
+      setError('Failed to auto-generate stats. Check your connection or Firebase config.')
+      setSaveStatus('Failed to auto-generate')
+      console.error('[WeeklyReview] Auto-generate failed:', e)
+    } finally {
+      setReviewLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!user || !weekStart) return
+    setLoading(true)
+    try {
+      const data = {
+        weekStart,
+        bestMoment: form.bestMoment.trim(),
+        nextWeekFocus: form.nextWeekFocus.trim(),
+        parentSummary: form.parentSummary.trim(),
+        // Include auto data if available
+        ...(autoData || {}),
+      }
+      await weeklyReviewService.save(data, user.uid)
+
+      // If no autoData was generated, warn the user that stats are missing
+      const hasAutoFields = autoData && (
+        autoData.iceSessions !== undefined ||
+        autoData.drylandSessions !== undefined ||
+        autoData.privateLessons !== undefined
+      )
+      if (!hasAutoFields) {
+        setSaveStatus('Saved! Note: auto stats were not generated. Click "Regenerate" to include them.')
+      } else {
+        setSaveStatus('Saved!')
+      }
+      setTimeout(() => setSaveStatus(''), 5000)
+      await loadReviews()
+    } catch (e) {
+      setError('Save failed. Check your connection or Firebase config.')
+      console.error('[WeeklyReview] Save failed:', e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateField = (field, value) => setForm(prev => ({ ...prev, [field]: value }))
+
+  const goToPrevWeek = () => {
+    const d = new Date(weekStart + 'T00:00:00')
+    d.setDate(d.getDate() - 7)
+    setWeekStart(d.toISOString().slice(0, 10))
+  }
+
+  const goToNextWeek = () => {
+    const d = new Date(weekStart + 'T00:00:00')
+    d.setDate(d.getDate() + 7)
+    setWeekStart(d.toISOString().slice(0, 10))
+  }
+
+  return (
+    <div className="p-4 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Weekly Review</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Auto-generated stats + manual reflections
+          </p>
+        </div>
+      </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* Week Navigation */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={goToPrevWeek} className="p-1.5 rounded-lg hover:bg-gray-100">
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <h2 className="font-semibold text-gray-900">{getWeekRange(weekStart)}</h2>
+          <button onClick={goToNextWeek} className="p-1.5 rounded-lg hover:bg-gray-100">
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+        <button
+          onClick={autoGenerate}
+          disabled={reviewLoading}
+          className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${reviewLoading ? 'animate-spin' : ''}`} />
+          {reviewLoading ? 'Generating...' : autoData ? 'Regenerate Weekly Stats' : 'Auto-Generate Weekly Stats'}
+        </button>
+        {/* Hint when autoData is not yet generated */}
+        {!autoData && !reviewLoading && (
+          <p className="text-xs text-gray-400 text-center mt-2">
+            Click the button above to auto-generate stats from your sessions, coach notes, and performance records.
+          </p>
+        )}
+      </div>
+
+      {/* Save Status */}
+      {saveStatus && (
+        <div className={`text-center text-sm font-medium py-2 px-3 rounded-lg ${
+          saveStatus.includes('Saved') ? 'bg-green-50 text-green-700' :
+          saveStatus.includes('failed') ? 'bg-red-50 text-red-700' :
+          'bg-blue-50 text-blue-700'
+        }`}>
+          {saveStatus}
+        </div>
+      )}
+
+      {/* Loading State */}
+      {reviewLoading && (
+        <div className="text-center py-8 text-gray-400">
+          <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
+          <p className="text-sm">Aggregating sessions, notes, and performance...</p>
+        </div>
+      )}
+
+      {/* Auto-Generated Stats */}
+      {!reviewLoading && autoData && (
+        <div className="space-y-4">
+          {/* Session Stats Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar className="w-4 h-4 text-indigo-500" />
+                <span className="text-xs text-gray-500">Ice Sessions</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{autoData.iceSessions || 0}</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs text-gray-500">Dryland Sessions</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{autoData.drylandSessions || 0}</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-1">
+                <Target className="w-4 h-4 text-amber-500" />
+                <span className="text-xs text-gray-500">Private Lessons</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{autoData.privateLessons || 0}</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="w-4 h-4 text-violet-500" />
+                <span className="text-xs text-gray-500">Total Minutes</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{autoData.totalTrainingMinutes || 0}</p>
+            </div>
+          </div>
+
+          {/* Top Technical Issues */}
+          {autoData.topTechnicalIssues && autoData.topTechnicalIssues.length > 0 && (
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Lightbulb className="w-4 h-4 text-amber-500" />
+                <h2 className="font-semibold text-gray-900">Top Technical Issues</h2>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {autoData.topTechnicalIssues.map((item) => (
+                  <span
+                    key={item.tag}
+                    className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-medium"
+                  >
+                    #{item.tag} <span className="text-amber-500">({item.count})</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Coach Notes */}
+          {autoData.topCoachNotes && autoData.topCoachNotes.length > 0 && (
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquare className="w-4 h-4 text-blue-500" />
+                <h2 className="font-semibold text-gray-900">Top Coach Notes</h2>
+              </div>
+              <div className="space-y-3">
+                {autoData.topCoachNotes.map((note, i) => (
+                  <div key={i} className="border-l-2 border-blue-200 pl-3">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                      <span className="font-medium">{note.coachName}</span>
+                      <span>·</span>
+                      <span>{formatDateLabel(note.date)}</span>
+                      <span>·</span>
+                      <span className={`font-medium ${
+                        note.priority === 'high' ? 'text-red-500' :
+                        note.priority === 'medium' ? 'text-amber-500' :
+                        'text-green-500'
+                      }`}>
+                        {note.priority}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700">{note.note}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Best Performance */}
+          {autoData.bestPerformances && autoData.bestPerformances.length > 0 && (
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Award className="w-5 h-5 text-indigo-600" />
+                <h2 className="font-semibold text-indigo-900">Best Performance This Week</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {autoData.bestPerformances.map((perf) => (
+                  <div key={perf.event} className="bg-white/70 rounded-lg p-2.5">
+                    <p className="text-xs text-indigo-500 font-medium">{perf.event}</p>
+                    <p className="text-lg font-bold text-indigo-900">{formatTime(perf.time)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty state if no data */}
+          {!autoData.iceSessions && !autoData.drylandSessions && !autoData.privateLessons &&
+           !autoData.topTechnicalIssues?.length && !autoData.topCoachNotes?.length && !autoData.bestPerformances?.length && (
+            <div className="text-center py-6 text-gray-400">
+              <p className="text-sm">No data for this week yet</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Manual Fields */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
+        <h3 className="font-semibold text-gray-900">Manual Reflections</h3>
+
+        {/* Best Moment */}
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">
+            <Star className="w-3 h-3 inline mr-1" />
+            Best Moment This Week
+          </label>
+          <textarea
+            value={form.bestMoment}
+            onChange={(e) => updateField('bestMoment', e.target.value)}
+            placeholder="What was your best moment this week?"
+            rows={2}
+            className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
+          />
+        </div>
+
+        {/* Next Week Focus */}
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">
+            <Target className="w-3 h-3 inline mr-1" />
+            Next Week Focus
+          </label>
+          <textarea
+            value={form.nextWeekFocus}
+            onChange={(e) => updateField('nextWeekFocus', e.target.value)}
+            placeholder="What to focus on next week?"
+            rows={2}
+            className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
+          />
+        </div>
+
+        {/* Parent Summary */}
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">
+            <MessageSquare className="w-3 h-3 inline mr-1" />
+            Parent Summary
+          </label>
+          <textarea
+            value={form.parentSummary}
+            onChange={(e) => updateField('parentSummary', e.target.value)}
+            placeholder="Summary for parents..."
+            rows={3}
+            className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
+          />
+        </div>
+
+        {/* Save Button */}
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
+        >
+          <Save className="w-4 h-4" />
+          {loading ? 'Saving...' : 'Save Weekly Review'}
+        </button>
+      </div>
+    </div>
+  )
+}
