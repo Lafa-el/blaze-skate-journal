@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile as firebaseUpdateProfile } from 'firebase/auth'
+import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile as firebaseUpdateProfile, updatePassword, deleteUser, updateEmail, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth'
 import { auth } from '../firebase/auth'
 
 const AuthContext = createContext({
@@ -11,10 +11,16 @@ const AuthContext = createContext({
   resetPasswordEmail: async () => {},
   updateProfile: async () => {},
   signOutUser: async () => {},
+  updatePassword: async () => {},
+  updateEmail: async () => {},
+  deleteAccount: async () => {},
   isLoading: false,
   signInError: null,
   signUpError: null,
   resetError: null,
+  passwordError: null,
+  emailError: null,
+  deleteError: null,
 })
 
 export function AuthProvider({ children }) {
@@ -24,6 +30,9 @@ export function AuthProvider({ children }) {
   const [signInError, setSignInError] = useState(null)
   const [signUpError, setSignUpError] = useState(null)
   const [resetError, setResetError] = useState(null)
+  const [passwordError, setPasswordError] = useState(null)
+  const [emailError, setEmailError] = useState(null)
+  const [deleteError, setDeleteError] = useState(null)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -123,6 +132,90 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const updatePasswordFn = async (currentPassword, newPassword) => {
+    setIsLoading(true)
+    setPasswordError(null)
+    try {
+      const user = auth.currentUser
+      if (!user || !user.email) throw new Error('No email found for current user')
+      
+      const credential = EmailAuthProvider.credential(user.email, currentPassword)
+      await reauthenticateWithCredential(user, credential)
+      await updatePassword(user, newPassword)
+    } catch (e) {
+      let message = 'Failed to update password.'
+      if (e.code === 'auth/wrong-password') {
+        message = 'Current password is incorrect.'
+      } else if (e.code === 'auth/weak-password') {
+        message = 'New password is too weak.'
+      } else if (e.code === 'auth/requires-recent-login') {
+        message = 'Please sign out and sign in again, then try again.'
+      } else if (e.message) {
+        message = e.message
+      }
+      setPasswordError(message)
+      throw new Error(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const updateEmailFn = async (newEmail) => {
+    setIsLoading(true)
+    setEmailError(null)
+    try {
+      const user = auth.currentUser
+      if (!user || !user.email) throw new Error('No email found for current user')
+      
+      const credential = EmailAuthProvider.credential(user.email, newEmail)
+      await reauthenticateWithCredential(user, credential)
+      await updateEmail(user, newEmail)
+    } catch (e) {
+      let message = 'Failed to update email.'
+      if (e.code === 'auth/wrong-password') {
+        message = 'Password is incorrect.'
+      } else if (e.code === 'auth/email-already-in-use') {
+        message = 'This email is already in use.'
+      } else if (e.code === 'auth/invalid-email') {
+        message = 'Invalid email address.'
+      } else if (e.code === 'auth/requires-recent-login') {
+        message = 'Please sign out and sign in again, then try again.'
+      } else if (e.message) {
+        message = e.message
+      }
+      setEmailError(message)
+      throw new Error(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const deleteAccountFn = async (currentPassword) => {
+    setIsLoading(true)
+    setDeleteError(null)
+    try {
+      const user = auth.currentUser
+      if (!user || !user.email) throw new Error('No email found for current user')
+      
+      const credential = EmailAuthProvider.credential(user.email, currentPassword)
+      await reauthenticateWithCredential(user, credential)
+      await deleteUser(user)
+    } catch (e) {
+      let message = 'Failed to delete account.'
+      if (e.code === 'auth/wrong-password') {
+        message = 'Password is incorrect.'
+      } else if (e.code === 'auth/requires-recent-login') {
+        message = 'Please sign out and sign in again, then try again.'
+      } else if (e.message) {
+        message = e.message
+      }
+      setDeleteError(message)
+      throw new Error(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -134,10 +227,16 @@ export function AuthProvider({ children }) {
         resetPasswordEmail: resetPasswordEmailFn,
         updateProfile: updateProfileFn,
         signOutUser: signOutUserFn,
+        updatePassword: updatePasswordFn,
+        updateEmail: updateEmailFn,
+        deleteAccount: deleteAccountFn,
         isLoading,
         signInError,
         signUpError,
         resetError,
+        passwordError,
+        emailError,
+        deleteError,
       }}
     >
       {children}

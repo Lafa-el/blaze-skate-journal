@@ -13,6 +13,8 @@ import SummerCamp from './pages/SummerCamp'
 import Settings from './pages/Settings'
 import Export from './pages/Export'
 import EditProfile from './pages/EditProfile'
+import HelpSupport from './pages/HelpSupport'
+import PrivacySecurity from './pages/PrivacySecurity'
 import Login from './pages/Login'
 import BottomNav from './components/BottomNav'
 
@@ -68,8 +70,10 @@ export default function App() {
         <Route path="/weekly-review" element={<ProtectedRoute><WeeklyReview /></ProtectedRoute>} />
         <Route path="/summer-camp" element={<ProtectedRoute><SummerCamp /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-        <Route path="/export" element={<ProtectedRoute><Export /></ProtectedRoute>} />
+<Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+<Route path="/privacy-security" element={<ProtectedRoute><PrivacySecurity /></ProtectedRoute>} />
+<Route path="/help-support" element={<ProtectedRoute><HelpSupport /></ProtectedRoute>} />
+<Route path="/export" element={<ProtectedRoute><Export /></ProtectedRoute>} />
       </Routes>
 
       {/* Show BottomNav only for protected routes (not login page) */}

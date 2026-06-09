@@ -532,13 +532,13 @@ const settingsGroups = [
     title: 'Data',
     items: [
       { icon: Database, label: 'Export Data', desc: 'Download your journal data' },
-      { icon: Shield, label: 'Privacy & Security', desc: 'Account settings' },
+      { icon: Shield, label: 'Privacy & Security', desc: 'Password, email, delete account', action: 'navigate', actionPath: '/privacy-security' },
     ],
   },
   {
     title: 'About',
     items: [
-      { icon: HelpCircle, label: 'Help & Support', desc: 'FAQs, contact us' },
+      { icon: HelpCircle, label: 'Help & Support', desc: 'FAQs, contact us', action: 'navigate', actionPath: '/help-support' },
       { icon: LogOut, label: 'Sign Out', desc: 'Log out of your account', danger: true },
     ],
   },
