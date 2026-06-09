@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { User, Bell, Shield, Palette, LogOut, HelpCircle, Database, Globe, ChevronRight } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate, Link } from 'react-router-dom'
+import { athleteService } from '../services/athleteService'
 
 const THEME_KEY = 'blaze_theme'
 
@@ -15,7 +16,6 @@ function loadTheme() {
   return 'auto'
 }
 
-const LEVELS = ['Beginner', 'Intermediate', 'Advanced']
 const NOTIFICATIONS_KEY = 'notification_preferences'
 
 const notificationTypes = [
@@ -74,8 +74,10 @@ export default function Settings() {
   const [theme, setTheme] = useState(loadTheme)
   const [showConfirm, setShowConfirm] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
-  const [memberLevel, setMemberLevel] = useState('')
   const [showLevelPicker, setShowLevelPicker] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [skatingFrom, setSkatingFrom] = useState('')
+  const [birthday, setBirthday] = useState('')
 
   // Apply theme to document
   useEffect(() => {
@@ -114,10 +116,123 @@ export default function Settings() {
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   }
 
+  // Load avatar URL from Firestore
   useEffect(() => {
-    const saved = localStorage.getItem('member_level')
-    if (saved) setMemberLevel(saved)
-  }, [])
+    async function loadAvatar() {
+      try {
+        const athlete = await athleteService.get(user?.uid || 'default')
+        if (athlete?.data?.avatarUrl) {
+          setAvatarUrl(athlete.data.avatarUrl)
+        }
+      } catch (e) {
+        console.error('[Settings] Failed to load avatar:', e)
+      }
+    }
+    if (user?.uid) loadAvatar()
+  }, [user])
+
+  // Load skatingFrom from Firestore
+  useEffect(() => {
+    async function loadSkatingFrom() {
+      try {
+        const athlete = await athleteService.get(user?.uid || 'default')
+        if (athlete?.data?.skatingFrom) {
+          setSkatingFrom(athlete.data.skatingFrom)
+        }
+      } catch (e) {
+        console.error('[Settings] Failed to load skatingFrom:', e)
+      }
+    }
+    if (user?.uid) loadSkatingFrom()
+  }, [user])
+
+  // Load birthday from Firestore
+  useEffect(() => {
+    async function loadBirthday() {
+      try {
+        const athlete = await athleteService.get(user?.uid || 'default')
+        if (athlete?.data?.birthday) {
+          setBirthday(athlete.data.birthday)
+        }
+      } catch (e) {
+        console.error('[Settings] Failed to load birthday:', e)
+      }
+    }
+    if (user?.uid) loadBirthday()
+  }, [user])
+
+  // Calculate skating duration
+  const getSkatingDuration = () => {
+    if (!skatingFrom) return null
+    const start = new Date(skatingFrom)
+    const now = new Date()
+    
+    let years = now.getFullYear() - start.getFullYear()
+    let months = now.getMonth() - start.getMonth()
+    let days = now.getDate() - start.getDate()
+    
+    if (days < 0) {
+      days += new Date(now.getFullYear(), now.getMonth(), 0).getDate()
+      months--
+    }
+    if (months < 0) {
+      months += 12
+      years--
+    }
+    
+    return { years, months, days }
+  }
+
+  const skatingDuration = getSkatingDuration()
+
+  // Calculate skating age based on ISU rule (July 1st cutoff)
+  // Every July 1, the skating age group is determined by birth date.
+  // - Born Jan 1 - Jun 30: age = seasonStartYear - birthYear
+  // - Born Jul 1 - Dec 31: age = seasonStartYear - birthYear - 1
+  const getSkatingAge = () => {
+    if (!birthday) return null
+    const birthDate = new Date(birthday)
+    const now = new Date()
+    
+    const currentYear = now.getFullYear()
+    const julyFirstThisYear = new Date(currentYear, 6, 1) // July 1
+    const birthMonth = birthDate.getMonth() // 0-11
+    const birthDay = birthDate.getDate()
+    
+    // Determine which skating season we're in
+    // Season: July 1 this year to June 30 next year
+    let seasonStartYear = currentYear
+    if (now < julyFirstThisYear) {
+      // We're before July 1, so we're in the previous season (Jul 1 last year to Jun 30 this year)
+      seasonStartYear = currentYear - 1
+    }
+    
+    // Check if born before or on July 1
+    const bornBeforeJuly1 = (birthMonth < 6) || (birthMonth === 6 && birthDay < 1)
+    
+    if (bornBeforeJuly1) {
+      return seasonStartYear - birthDate.getFullYear()
+    } else {
+      return seasonStartYear - birthDate.getFullYear() - 1
+    }
+  }
+
+  const skatingAge = getSkatingAge()
+
+  // Get age category based on skating age
+  const getAgeCategory = () => {
+    if (skatingAge === null) return null
+    if (skatingAge <= 6) return 'Pre-Novice'
+    if (skatingAge <= 8) return 'Junior F (7/8)'
+    if (skatingAge <= 10) return 'Junior E (9/10)'
+    if (skatingAge <= 12) return 'Junior D (11/12)'
+    if (skatingAge <= 14) return 'Junior C (13/14)'
+    if (skatingAge <= 16) return 'Junior B (15/16)'
+    if (skatingAge <= 18) return 'Junior A (17/18)'
+    return 'Senior (18+)'
+  }
+
+  const ageCategory = getAgeCategory()
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -131,12 +246,6 @@ export default function Settings() {
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [showNotifPicker, showAppearancePicker])
-
-  const handleSaveLevel = (level) => {
-    setMemberLevel(level)
-    localStorage.setItem('member_level', level)
-    setShowLevelPicker(false)
-  }
 
   const handleToggleNotif = (type, enabled = null) => {
     setNotifications((prev) => {
@@ -178,43 +287,36 @@ export default function Settings() {
       {/* Profile Card */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xl font-bold">
-            {getInitials(displayName)}
-          </div>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xl font-bold">
+              {getInitials(displayName)}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-gray-900 truncate">{displayName}</h2>
             {email && (
               <p className="text-sm text-gray-500 truncate">{email}</p>
             )}
-            {creationTime && (
-              <p className="text-xs text-gray-400 mt-0.5">
-                Joined {formatDate(creationTime)}
+            {skatingAge !== null && (
+              <p className="text-xs text-purple-600 font-medium mt-1">
+                Skating Age: {skatingAge}
               </p>
             )}
-            <button
-              onClick={() => setShowLevelPicker(!showLevelPicker)}
-              className="text-xs font-medium text-purple-600 hover:text-purple-700 mt-1"
-            >
-              {memberLevel ? `Member Level: ${memberLevel}` : 'Set Member Level'}
-            </button>
-
-            {/* Member Level Picker */}
-            {showLevelPicker && (
-              <div className="absolute mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-10">
-                {LEVELS.map((level) => (
-                  <button
-                    key={level}
-                    onClick={() => handleSaveLevel(level)}
-                    className={`block w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
-                      memberLevel === level
-                        ? 'bg-purple-100 text-purple-700 font-medium'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {level}
-                  </button>
-                ))}
-              </div>
+            {ageCategory !== null && (
+              <p className="text-xs text-purple-600 font-medium mt-0.5">
+                Age Category: {ageCategory}
+              </p>
+            )}
+            {skatingDuration && (
+              <p className="text-xs text-purple-600 font-medium mt-1">
+                Skating for {skatingDuration.years} year{skatingDuration.years > 1 ? 's' : ''} {skatingDuration.months} month{skatingDuration.months !== 1 ? 's' : ''} {skatingDuration.days} day{skatingDuration.days !== 1 ? 's' : ''}
+              </p>
             )}
 
             {isAnonymous && (

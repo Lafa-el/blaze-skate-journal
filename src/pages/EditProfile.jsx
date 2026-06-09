@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { athleteService } from '../services/athleteService'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '../firebase/firestore'
 import { auth } from '../firebase/auth'
-import { storage } from '../firebase/storage'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { updateProfile as firebaseUpdateProfile } from 'firebase/auth'
-import { ArrowLeft, Save, Loader2, User, Camera } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, User, Camera, Calendar } from 'lucide-react'
 
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced']
 const MAX_BIO_LENGTH = 500
@@ -24,6 +24,8 @@ export default function EditProfile() {
   const [level, setLevel] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [avatarFile, setAvatarFile] = useState(null)
+  const [skatingFrom, setSkatingFrom] = useState('')
+  const [birthday, setBirthday] = useState('')
 
   // Load current profile
   useEffect(() => {
@@ -34,12 +36,21 @@ export default function EditProfile() {
         if (user?.displayName) setDisplayName(user.displayName)
         if (user?.photoURL) setAvatarUrl(user.photoURL)
 
+        // Use athleteService.get to find the athlete doc by UID (stored as athleteId)
         const athlete = await athleteService.get(user?.uid || 'default')
         if (athlete) {
           const data = athlete.data
           setBio(data.bio || '')
           setLevel(data.level || '')
           if (data.avatarUrl) setAvatarUrl(data.avatarUrl)
+          if (data.skatingFrom) setSkatingFrom(data.skatingFrom)
+          if (data.birthday) setBirthday(data.birthday)
+          // Store the Firestore doc ID so we can update it later
+          window.__athleteDocId = athlete.docId
+        } else {
+          // Create an athlete record if it doesn't exist
+          const result = await athleteService.createOrUpdate(user?.uid || 'default')
+          window.__athleteDocId = result
         }
       } catch (e) {
         setError('Failed to load profile: ' + e.message)
@@ -74,19 +85,26 @@ export default function EditProfile() {
     setSaving(true)
     setError('')
     try {
-      let avatarUrlToSave = null
       const authUpdates = { displayName: displayName.trim() }
 
+      // If a new avatar file was selected, store the base64 data URL
+      // Avatar URL is stored ONLY in Firestore (Firebase Auth photoURL has 512 char limit)
+      let avatarUrlToSave = avatarUrl || null
       if (avatarFile) {
-        const compressed = await compressImage(avatarFile)
-        const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}.jpg`)
-        await uploadBytes(storageRef, compressed)
-        avatarUrlToSave = await getDownloadURL(storageRef)
-        authUpdates.photoURL = avatarUrlToSave
+        const reader = new FileReader()
+        avatarUrlToSave = await new Promise((resolve, reject) => {
+          reader.onloadend = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(avatarFile)
+        })
       }
 
-      await firebaseUpdateProfile(auth.currentUser, authUpdates)
+      // Update Firebase Auth (only display name)
+      if (auth.currentUser) {
+        await firebaseUpdateProfile(auth.currentUser, authUpdates)
+      }
 
+      // Update Firestore
       const firestoreUpdates = {
         displayName: displayName.trim(),
         updatedAt: new Date().toISOString(),
@@ -94,8 +112,12 @@ export default function EditProfile() {
       if (bio) firestoreUpdates.bio = bio
       if (level) firestoreUpdates.level = level
       if (avatarUrlToSave) firestoreUpdates.avatarUrl = avatarUrlToSave
+      if (skatingFrom) firestoreUpdates.skatingFrom = skatingFrom
+      if (birthday) firestoreUpdates.birthday = birthday
 
-      await athleteService.update(user.uid, firestoreUpdates)
+      // Use the stored doc ID, fallback to user.uid
+      const docId = window.__athleteDocId || user.uid
+      await updateDoc(doc(db, 'athletes', docId), firestoreUpdates)
 
       navigate('/settings')
     } catch (e) {
@@ -194,19 +216,30 @@ export default function EditProfile() {
           />
         </div>
 
-        {/* Level */}
+        {/* Skating From */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <label className="text-sm font-medium text-gray-700">Level</label>
-          <select
-            value={level}
-            onChange={(e) => setLevel(e.target.value)}
+          <label className="text-sm font-medium text-gray-700">Skating From</label>
+          <input
+            type="date"
+            value={skatingFrom}
+            onChange={(e) => setSkatingFrom(e.target.value)}
+            placeholder="MM/DD/YYYY"
             className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent appearance-none bg-white"
-          >
-            <option value="">Select level</option>
-            {LEVELS.map((l) => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </select>
+          />
+          <p className="text-xs text-gray-400 mt-1">When did you start skating?</p>
+        </div>
+
+        {/* Birthday */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <label className="text-sm font-medium text-gray-700">Birthday</label>
+          <input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            placeholder="MM/DD/YYYY"
+            className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent appearance-none bg-white"
+          />
+          <p className="text-xs text-gray-400 mt-1">Your date of birth</p>
         </div>
 
         {/* Email (read-only) */}
@@ -226,28 +259,4 @@ export default function EditProfile() {
       </div>
     </div>
   )
-}
-
-async function compressImage(file, maxWidth = 512, quality = 0.7) {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      let width = img.width
-      let height = img.height
-
-      if (width > maxWidth) {
-        height = (height * maxWidth) / width
-        width = maxWidth
-      }
-
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, width, height)
-
-      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality)
-    }
-    img.src = URL.createObjectURL(file)
-  })
 }
