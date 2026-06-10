@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowRight, CalendarDays, Clock, TrendingUp, Target, Video, PenLine, HeartPulse, BarChart3, Tent } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ArrowRight, CalendarDays, Clock, TrendingUp, Target, Video, PenLine, HeartPulse, BarChart3, Tent, Settings } from 'lucide-react'
 import { sessionService } from '../services/sessionService'
+import { athleteService } from '../services/athleteService'
 import { useAuth } from '../contexts/AuthContext'
 
 const quickLinks = [
@@ -64,9 +65,99 @@ function calcStreak(sessionDates) {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [birthday, setBirthday] = useState('')
+  const [skatingFrom, setSkatingFrom] = useState('')
+
+  useEffect(() => {
+    if (!user) return
+    loadSessions()
+    loadProfile()
+  }, [user])
+
+  const loadProfile = async () => {
+    try {
+      const athlete = await athleteService.get(user?.uid || 'default')
+      if (athlete) {
+        if (athlete.data?.avatarUrl) setAvatarUrl(athlete.data.avatarUrl)
+        if (athlete.data?.birthday) setBirthday(athlete.data.birthday)
+        if (athlete.data?.skatingFrom) setSkatingFrom(athlete.data.skatingFrom)
+      }
+    } catch (e) {
+      console.error('[Dashboard] Failed to load profile:', e)
+    }
+  }
+
+  const getInitials = (name) => {
+    if (!name) return 'U'
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+  }
+
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User'
+
+  const getSkatingAge = () => {
+    if (!birthday) return null
+    const birthDate = new Date(birthday)
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const julyFirstThisYear = new Date(currentYear, 6, 1)
+    const birthMonth = birthDate.getMonth()
+    const birthDay = birthDate.getDate()
+    let seasonStartYear = currentYear
+    if (now < julyFirstThisYear) {
+      seasonStartYear = currentYear - 1
+    }
+    const bornBeforeJuly1 = (birthMonth < 6) || (birthMonth === 6 && birthDay < 1)
+    if (bornBeforeJuly1) {
+      return seasonStartYear - birthDate.getFullYear()
+    } else {
+      return seasonStartYear - birthDate.getFullYear() - 1
+    }
+  }
+
+  const skatingAge = getSkatingAge()
+
+  const getAgeCategory = () => {
+    if (skatingAge === null) return null
+    if (skatingAge <= 6) return 'Pre-Novice'
+    if (skatingAge <= 8) return 'Junior F (7/8)'
+    if (skatingAge <= 10) return 'Junior E (9/10)'
+    if (skatingAge <= 12) return 'Junior D (11/12)'
+    if (skatingAge <= 14) return 'Junior C (13/14)'
+    if (skatingAge <= 16) return 'Junior B (15/16)'
+    if (skatingAge <= 18) return 'Junior A (17/18)'
+    return 'Senior (18+)'
+  }
+
+  const ageCategory = getAgeCategory()
+
+  // Calculate skating duration
+  const getSkatingDuration = () => {
+    if (!skatingFrom) return null
+    const start = new Date(skatingFrom)
+    const now = new Date()
+    
+    let years = now.getFullYear() - start.getFullYear()
+    let months = now.getMonth() - start.getMonth()
+    let days = now.getDate() - start.getDate()
+    
+    if (days < 0) {
+      days += new Date(now.getFullYear(), now.getMonth(), 0).getDate()
+      months--
+    }
+    if (months < 0) {
+      months += 12
+      years--
+    }
+    
+    return { years, months, days }
+  }
+
+  const skatingDuration = getSkatingDuration()
 
   useEffect(() => {
     if (!user) return
@@ -134,17 +225,43 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Blaze Skate Journal</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-          </p>
+      {/* User Card */}
+      <div
+        onClick={() => navigate('/settings')}
+        className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 cursor-pointer hover:border-indigo-200 transition-colors"
+      >
+        <div className="flex items-center gap-4">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xl font-bold">
+              {getInitials(displayName)}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-gray-900 truncate">{displayName}</h2>
+            {skatingAge !== null && (
+              <p className="text-xs text-purple-600 font-medium mt-1">
+                Skating Age: {skatingAge}
+              </p>
+            )}
+            {ageCategory !== null && (
+              <p className="text-xs text-purple-600 font-medium mt-0.5">
+                Age Category: {ageCategory}
+              </p>
+            )}
+            {skatingDuration && (
+              <p className="text-xs text-purple-600 font-medium mt-1">
+                Skating for {skatingDuration.years} year{skatingDuration.years > 1 ? 's' : ''} {skatingDuration.months} month{skatingDuration.months !== 1 ? 's' : ''} {skatingDuration.days} day{skatingDuration.days !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+          <Settings className="w-5 h-5 text-gray-400 shrink-0" />
         </div>
-        <Link to="/settings" className="p-2 rounded-full hover:bg-gray-100">
-          <TrendingUp className="w-5 h-5 text-gray-600" />
-        </Link>
       </div>
 
       {/* Stats Row */}
