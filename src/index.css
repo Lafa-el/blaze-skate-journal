@@ -17,9 +17,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+  html {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     margin: 0;
     padding: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #f8fafc;
     color: #0f172a;
@@ -36,7 +45,10 @@
   #root {
     max-width: 480px;
     margin: 0 auto;
-    min-height: 100vh;
+    height: 100%;
+    height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     background-color: #f8fafc;
     position: relative;
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);

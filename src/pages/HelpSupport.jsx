@@ -110,13 +110,13 @@ export default function HelpSupport() {
 
           {/* Contact Info */}
           <div className="space-y-3 mb-6">
-            <a href="mailto:support@blazeskate.com" className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <Mail className="w-5 h-5 text-gray-500" />
               <div>
                 <p className="text-xs text-gray-500">Email</p>
                 <p className="text-sm text-gray-900">support@blazeskate.com</p>
               </div>
-            </a>
+            </div>
           </div>
 
           {/* Contact Form */}
