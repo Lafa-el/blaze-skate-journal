@@ -15,27 +15,29 @@ import {
   Download,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useLanguage } from '../i18n'
 
 const primaryTabs = [
-  { path: '/dashboard', label: 'Dashboard', icon: Home },
-  { path: '/calendar', label: 'Calendar', icon: CalendarDays },
-  { path: '/performance', label: 'Stats', icon: BarChart3 },
-  { path: '/videos', label: 'Videos', icon: Video },
+  { path: '/dashboard', key: 'nav.dashboard', icon: Home },
+  { path: '/calendar', key: 'nav.calendar', icon: CalendarDays },
+  { path: '/performance', key: 'nav.stats', icon: BarChart3 },
+  { path: '/videos', key: 'nav.videos', icon: Video },
 ]
 
 const moreItems = [
-  { path: '/daily', label: 'Daily', icon: Calendar },
-  { path: '/sessions', label: 'Sessions', icon: Clock },
-  { path: '/coach-notes', label: 'Notes', icon: PenLine },
-  { path: '/body', label: 'Body', icon: HeartPulse },
-  { path: '/weekly-review', label: 'Review', icon: TrendingUp },
-  { path: '/summer-camp', label: 'Camp', icon: Tent },
-  { path: '/export', label: 'Export', icon: Download },
-  { path: '/settings', label: 'Settings', icon: Settings },
+  { path: '/daily', key: 'nav.daily', icon: Calendar },
+  { path: '/sessions', key: 'nav.sessions', icon: Clock },
+  { path: '/coach-notes', key: 'nav.notes', icon: PenLine },
+  { path: '/body', key: 'nav.body', icon: HeartPulse },
+  { path: '/weekly-review', key: 'nav.review', icon: TrendingUp },
+  { path: '/summer-camp', key: 'nav.camp', icon: Tent },
+  { path: '/export', key: 'nav.export', icon: Download },
+  { path: '/settings', key: 'nav.settings', icon: Settings },
 ]
 
 export default function BottomNav() {
   const location = useLocation()
+  const { t } = useLanguage()
   const [moreOpen, setMoreOpen] = useState(false)
 
   // Close menu when clicking outside
@@ -65,7 +67,7 @@ export default function BottomNav() {
       data-bottom-nav
     >
       <div className="flex items-center justify-around px-1 py-1">
-        {primaryTabs.map(({ path, label, icon: Icon }) => (
+        {primaryTabs.map(({ path, key, icon: Icon }) => (
           <Link
             key={path}
             to={path}
@@ -76,7 +78,7 @@ export default function BottomNav() {
             }`}
           >
             <Icon className="w-5 h-5" />
-            <span className="text-[10px] mt-0.5 font-medium">{label}</span>
+            <span className="text-[10px] mt-0.5 font-medium">{t(key)}</span>
           </Link>
         ))}
 
@@ -93,13 +95,13 @@ export default function BottomNav() {
             }`}
           >
             <MoreHorizontal className="w-5 h-5" />
-            <span className="text-[10px] mt-0.5 font-medium">More</span>
+            <span className="text-[10px] mt-0.5 font-medium">{t('nav.more')}</span>
           </button>
 
           {/* More submenu */}
           {moreOpen && (
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 w-52">
-              {moreItems.map(({ path, label, icon: Icon }) => (
+              {moreItems.map(({ path, key, icon: Icon }) => (
                 <Link
                   key={path}
                   to={path}
@@ -111,7 +113,7 @@ export default function BottomNav() {
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span>{label}</span>
+                  <span>{t(key)}</span>
                 </Link>
               ))}
             </div>

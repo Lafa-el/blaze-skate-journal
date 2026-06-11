@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Plus, Clock, Scissors, Trophy, Calendar, MapPin, ChevronLeft, ChevronRight, Trash2, Edit3 } from 'lucide-react'
+import { Plus, Clock, Calendar, ChevronLeft, ChevronRight, Trash2, Edit3 } from 'lucide-react'
 import { sessionService } from '../services/sessionService'
 import { useAuth } from '../contexts/AuthContext'
+import { useLanguage } from '../i18n'
 
-const sessionTypes = [
-  { value: 'ice', label: 'Ice' },
-  { value: 'dryland', label: 'Dryland' },
-  { value: 'private_lesson', label: 'Private Lesson' },
-  { value: 'competition', label: 'Competition' },
-  { value: 'recovery', label: 'Recovery' },
-  { value: 'rest', label: 'Rest' },
-]
+const sessionTypeKeys = ['ice', 'dryland', 'private_lesson', 'competition', 'recovery', 'rest']
 
 const intensityLevels = [1, 2, 3, 4, 5]
 const defaultFocusTags = [
@@ -21,6 +15,7 @@ const defaultFocusTags = [
 
 export default function Sessions() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [sessions, setSessions] = useState([])
@@ -41,12 +36,6 @@ export default function Sessions() {
     notes: '',
   })
 
-  // Load sessions for selected date
-  useEffect(() => {
-    if (!user) return
-    loadSessions()
-  }, [user, selectedDate])
-
   const loadSessions = async () => {
     setError('')
     try {
@@ -54,10 +43,17 @@ export default function Sessions() {
       const filtered = all.filter(s => s.data.date === selectedDate)
       setSessions(filtered)
     } catch (e) {
-      setError('Failed to load sessions. Check your connection or Firebase config.')
+      setError(t('sessions.failedLoadSessions'))
       console.error('[Sessions] Failed to load:', e)
     }
   }
+
+  // Load sessions for selected date
+  useEffect(() => {
+    if (!user) return
+    loadSessions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, selectedDate])
 
   const resetForm = () => {
     setForm({
@@ -157,8 +153,8 @@ export default function Sessions() {
     <div className="p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Sessions</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Training sessions history</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('sessions.title')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('sessions.subtitle')}</p>
       </div>
 
       {/* Error Banner */}
@@ -184,9 +180,9 @@ export default function Sessions() {
         <div className="flex items-center gap-4 text-sm text-gray-600">
           <span className="flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />
-            {totalMinutes} min
+            {totalMinutes} {t('common.minutes')}
           </span>
-          <span>{sessions.length} session(s)</span>
+          <span>{sessions.length} {t('common.sessions')}</span>
         </div>
       </div>
 
@@ -201,7 +197,7 @@ export default function Sessions() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        {s.sessionLabel || `${s.sessionType.charAt(0).toUpperCase() + s.sessionType.slice(1)} Session`}
+                        {s.sessionLabel || `${s.sessionType.charAt(0).toUpperCase() + s.sessionType.slice(1)} ${t('common.session')}`}
                       </h3>
                       {s.coachName && (
                         <p className="text-sm text-gray-500 mt-0.5">{s.coachName}</p>
@@ -229,12 +225,12 @@ export default function Sessions() {
                     </span>
                     {s.intensity && (
                       <span className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-medium">
-                        Intensity: {s.intensity}/5
+                        {t('common.intensity')}: {s.intensity}/5
                       </span>
                     )}
                     {s.durationMinutes && (
                       <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-                        {s.durationMinutes} min
+                        {s.durationMinutes} {t('common.minutes')}
                       </span>
                     )}
                   </div>
@@ -262,7 +258,7 @@ export default function Sessions() {
       {sessions.length === 0 && !showForm && (
         <div className="text-center py-8 text-gray-400">
           <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No sessions for this day</p>
+          <p className="text-sm">{t('calendar.noSessionsForDay')}</p>
         </div>
       )}
 
@@ -270,24 +266,24 @@ export default function Sessions() {
       {showForm ? (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
           <h3 className="font-semibold text-gray-900">
-            {editId ? 'Edit Session' : 'Add Session'}
+            {editId ? t('sessions.editSession') : t('sessions.addSession')}
           </h3>
 
           {/* Session Type */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Session Type</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.sessionType')}</label>
             <div className="grid grid-cols-3 gap-1.5">
-              {sessionTypes.map((type) => (
+              {sessionTypeKeys.map((key) => (
                 <button
-                  key={type.value}
-                  onClick={() => updateField('sessionType', type.value)}
+                  key={key}
+                  onClick={() => updateField('sessionType', key)}
                   className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    form.sessionType === type.value
+                    form.sessionType === key
                       ? 'bg-primary text-white'
                       : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  {type.label}
+                  {t(`sessions.sessionTypeOptions.${key}`)}
                 </button>
               ))}
             </div>
@@ -295,31 +291,31 @@ export default function Sessions() {
 
           {/* Session Label */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Label (optional)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.sessionLabel')}</label>
             <input
               type="text"
               value={form.sessionLabel}
               onChange={(e) => updateField('sessionLabel', e.target.value)}
-              placeholder="e.g. AM Ice, Free Program"
+              placeholder={t('sessions.sessionLabelPlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
 
           {/* Duration */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Duration (minutes)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.duration')}</label>
             <input
               type="number"
               value={form.durationMinutes}
               onChange={(e) => updateField('durationMinutes', e.target.value)}
-              placeholder="e.g. 90"
+              placeholder={t('sessions.durationPlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
 
           {/* Intensity */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Intensity (1–5)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.intensity')}</label>
             <div className="flex gap-1.5">
               {intensityLevels.map((n) => (
                 <button
@@ -339,7 +335,7 @@ export default function Sessions() {
 
           {/* Focus Tags */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Focus Tags</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.focusTags')}</label>
             <div className="flex flex-wrap gap-1.5">
               {defaultFocusTags.map((tag) => (
                 <button
@@ -359,23 +355,23 @@ export default function Sessions() {
 
           {/* Coach Name */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Coach Name (optional)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.coachName')}</label>
             <input
               type="text"
               value={form.coachName}
               onChange={(e) => updateField('coachName', e.target.value)}
-              placeholder="e.g. Song Weilong"
+              placeholder={t('sessions.coachNamePlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Notes (optional)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.notes')}</label>
             <textarea
               value={form.notes}
               onChange={(e) => updateField('notes', e.target.value)}
-              placeholder="What happened in this session?"
+              placeholder={t('sessions.notesPlaceholder')}
               rows={3}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
             />
@@ -388,13 +384,13 @@ export default function Sessions() {
               disabled={loading}
               className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
             >
-              {loading ? 'Saving...' : editId ? 'Update' : 'Save Session'}
+              {loading ? t('common.saving') : (editId ? t('common.update') : t('sessions.saveSession'))}
             </button>
             <button
               onClick={resetForm}
               className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -407,7 +403,7 @@ export default function Sessions() {
           className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          Add Session
+          {t('sessions.addSession')}
         </button>
       )}
 
@@ -415,20 +411,20 @@ export default function Sessions() {
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold text-gray-900 mb-2">Delete Session?</h3>
-            <p className="text-sm text-gray-600 mb-4">This action cannot be undone.</p>
+            <h3 className="font-semibold text-gray-900 mb-2">{t('sessions.deleteSession')}</h3>
+            <p className="text-sm text-gray-600 mb-4">{t('sessions.deleteSessionConfirm')}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => handleDelete(deleteConfirm)}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-lg"
               >
-                Delete
+                {t('common.delete')}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 rounded-lg"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>

@@ -1,44 +1,46 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ChevronDown, ChevronUp, Mail, MessageSquare, Send } from 'lucide-react'
-
-const faqs = [
-  {
-    question: 'How do I log a training session?',
-    answer: 'Tap the "+" or "Sessions" button from the bottom navigation bar. Fill in the date, duration, skill focus, and notes, then tap Save to record your session.'
-  },
-  {
-    question: 'How do I update my profile?',
-    answer: 'Go to Settings > Edit Profile. There you can update your display name, bio, avatar photo, birthday, and skating start date.'
-  },
-  {
-    question: 'How does Skating Age work?',
-    answer: 'Skating Age is calculated annually based on July 1st. Skaters born January 1 - June 30 advance their age on July 1, while those born July 1 - December 31 advance on the following January 1. This follows ISU competition rules.'
-  },
-  {
-    question: 'How do I export my data?',
-    answer: 'Go to Settings > Export Data. You can download all your training sessions, notes, and reviews as a CSV or JSON file for backup purposes.'
-  },
-  {
-    question: 'How do I reset my password?',
-    answer: 'On the login page, tap "Forgot Password" and enter your registered email address. We will send you a password reset link.'
-  },
-  {
-    question: 'How do I delete my account?',
-    answer: 'Go to Settings > Privacy & Security > Delete Account. Follow the multi-step confirmation process. Warning: This action is permanent and all your data will be lost.'
-  },
-  {
-    question: 'Can I use this app offline?',
-    answer: 'The app works best with an internet connection. Some features may work offline, but data syncs when you reconnect.'
-  }
-]
+import { useLanguage } from '../i18n'
 
 export default function HelpSupport() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [openIndex, setOpenIndex] = useState(null)
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
   const [formSent, setFormSent] = useState(false)
   const [sending, setSending] = useState(false)
+
+  const faqs = [
+    {
+      question: t('helpSupport.faqs.0.q'),
+      answer: t('helpSupport.faqs.0.a')
+    },
+    {
+      question: t('helpSupport.faqs.1.q'),
+      answer: t('helpSupport.faqs.1.a')
+    },
+    {
+      question: t('helpSupport.faqs.2.q'),
+      answer: t('helpSupport.faqs.2.a')
+    },
+    {
+      question: t('helpSupport.faqs.3.q'),
+      answer: t('helpSupport.faqs.3.a')
+    },
+    {
+      question: t('helpSupport.faqs.4.q'),
+      answer: t('helpSupport.faqs.4.a')
+    },
+    {
+      question: t('helpSupport.faqs.5.q'),
+      answer: t('helpSupport.faqs.5.a')
+    },
+    {
+      question: t('helpSupport.faqs.6.q'),
+      answer: t('helpSupport.faqs.6.a')
+    }
+  ]
 
   const toggleFaq = (index) => {
     setOpenIndex(openIndex === index ? null : index)
@@ -68,7 +70,7 @@ export default function HelpSupport() {
           <button onClick={() => navigate(-1)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
-          <h1 className="text-lg font-semibold text-gray-900">Help & Support</h1>
+          <h1 className="text-lg font-semibold text-gray-900">{t('helpSupport.title')}</h1>
           <div className="flex-1" />
         </div>
       </div>
@@ -76,7 +78,7 @@ export default function HelpSupport() {
       <div className="p-4 space-y-6">
         {/* FAQs */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Frequently Asked Questions</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('helpSupport.faq')}</h2>
           <div className="space-y-2">
             {faqs.map((faq, index) => (
               <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -105,7 +107,7 @@ export default function HelpSupport() {
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <MessageSquare className="w-5 h-5 text-gray-500" />
-            <h2 className="font-semibold text-gray-900">Contact Us</h2>
+            <h2 className="font-semibold text-gray-900">{t('helpSupport.contact')}</h2>
           </div>
 
           {/* Contact Info */}
@@ -113,8 +115,8 @@ export default function HelpSupport() {
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <Mail className="w-5 h-5 text-gray-500" />
               <div>
-                <p className="text-xs text-gray-500">Email</p>
-                <p className="text-sm text-gray-900">support@blazeskate.com</p>
+                <p className="text-xs text-gray-500">{t('helpSupport.emailLabel')}</p>
+                <p className="text-sm text-gray-900">{t('helpSupport.emailValue')}</p>
               </div>
             </div>
           </div>
@@ -122,33 +124,33 @@ export default function HelpSupport() {
           {/* Contact Form */}
           <form onSubmit={handleContactSubmit} className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-gray-600">Name</label>
+              <label className="text-xs font-medium text-gray-600">{t('helpSupport.name')}</label>
               <input
                 type="text"
                 value={contactForm.name}
                 onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                placeholder="Your name"
+                placeholder={t('helpSupport.namePlaceholder')}
                 required
                 className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Email</label>
+              <label className="text-xs font-medium text-gray-600">{t('helpSupport.emailLabel')}</label>
               <input
                 type="email"
                 value={contactForm.email}
                 onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                placeholder="your@email.com"
+                placeholder={t('login.emailPlaceholder')}
                 required
                 className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Message</label>
+              <label className="text-xs font-medium text-gray-600">{t('helpSupport.message')}</label>
               <textarea
                 value={contactForm.message}
                 onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                placeholder="How can we help you?"
+                placeholder={t('helpSupport.messagePlaceholder')}
                 rows={4}
                 required
                 className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
@@ -165,12 +167,12 @@ export default function HelpSupport() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Sending...
+                  {t('helpSupport.sending')}
                 </span>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  Send Message
+                  {t('helpSupport.sendMessage')}
                 </>
               )}
             </button>
@@ -178,7 +180,7 @@ export default function HelpSupport() {
 
           {formSent && (
             <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-700">Opening your email client to send the message...</p>
+              <p className="text-sm text-green-700">{t('helpSupport.openEmailClient')}</p>
             </div>
           )}
         </div>

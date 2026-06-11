@@ -5,21 +5,23 @@ import {
 } from 'lucide-react'
 import { exportData } from '../services/exportService'
 import { useAuth } from '../contexts/AuthContext'
+import { useLanguage } from '../i18n'
 
 const EXPORT_SCOPES = [
-  { value: 'all', label: 'All Data', icon: BookOpen, description: 'Export everything' },
-  { value: 'dateRange', label: 'Date Range', icon: Calendar, description: 'Custom start/end dates' },
-  { value: 'summerCamp', label: 'Summer Camp 2026', icon: Target, description: 'Camp period stats + data' },
-  { value: 'singleWeek', label: 'Single Week', icon: Clock, description: 'One week (Mon–Sun)' },
+  { value: 'all', label: 'allData', icon: BookOpen, description: 'allDataDesc' },
+  { value: 'dateRange', label: 'dateRange', icon: Calendar, description: 'dateRangeDesc' },
+  { value: 'summerCamp', label: 'summerCamp2026', icon: Target, description: 'summerCampDesc' },
+  { value: 'singleWeek', label: 'singleWeek', icon: Clock, description: 'singleWeekDesc' },
 ]
 
 const EXPORT_FORMATS = [
-  { value: 'json', label: 'JSON', icon: FileJson, description: 'Structured data with metadata' },
-  { value: 'csv', label: 'CSV', icon: FileSpreadsheet, description: 'Flat table for spreadsheets' },
+  { value: 'json', label: 'json', icon: FileJson, description: 'jsonDesc' },
+  { value: 'csv', label: 'csv', icon: FileSpreadsheet, description: 'csvDesc' },
 ]
 
 export default function Export() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [exporting, setExporting] = useState(false)
   const [exported, setExported] = useState(false)
   const [error, setError] = useState('')
@@ -49,7 +51,7 @@ export default function Export() {
   const handleExport = async () => {
     if (!user) return
     if (!canExport()) {
-      setError('Please fill in all required date fields')
+      setError(t('export.fillDates'))
       return
     }
 
@@ -73,7 +75,7 @@ export default function Export() {
       setExported(true)
       setTimeout(() => setExported(false), 5000)
     } catch {
-      setError('Export failed. Please try again.')
+      setError(t('export.exportFailed'))
     } finally {
       setExporting(false)
     }
@@ -83,13 +85,13 @@ export default function Export() {
     <div className="p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Export Data</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Download your training data for SkatingX integration</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('export.title')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('export.subtitle')}</p>
       </div>
 
       {/* Format Selection */}
       <div>
-        <p className="text-xs font-medium text-gray-500 mb-2">Export Format</p>
+        <p className="text-xs font-medium text-gray-500 mb-2">{t('export.exportFormat')}</p>
         <div className="grid grid-cols-2 gap-3">
           {EXPORT_FORMATS.map((f) => {
             const Icon = f.icon
@@ -106,8 +108,8 @@ export default function Export() {
                 <Icon className={`w-5 h-5 mb-2 ${
                   format === f.value ? 'text-primary' : 'text-gray-400'
                 }`} />
-                <p className="text-sm font-semibold text-gray-900">{f.label}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">{f.description}</p>
+                <p className="text-sm font-semibold text-gray-900">{t(`export.${f.label}`)}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">{t(`export.${f.description}`)}</p>
               </button>
             )
           })}
@@ -116,7 +118,7 @@ export default function Export() {
 
       {/* Scope Selection */}
       <div>
-        <p className="text-xs font-medium text-gray-500 mb-2">Export Scope</p>
+        <p className="text-xs font-medium text-gray-500 mb-2">{t('export.exportScope')}</p>
         <div className="space-y-2">
           {EXPORT_SCOPES.map((s) => {
             const Icon = s.icon
@@ -134,8 +136,8 @@ export default function Export() {
                   scope === s.value ? 'text-primary' : 'text-gray-400'
                 }`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{s.label}</p>
-                  <p className="text-[10px] text-gray-500">{s.description}</p>
+                  <p className="text-sm font-semibold text-gray-900">{t(`export.${s.label}`)}</p>
+                  <p className="text-[10px] text-gray-500">{t(`export.${s.description}`)}</p>
                 </div>
                 <ChevronRight className={`w-4 h-4 shrink-0 ${
                   scope === s.value ? 'text-primary' : 'text-gray-300'
@@ -149,9 +151,9 @@ export default function Export() {
       {/* Date Range Options */}
       {scope === 'dateRange' && (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3">
-          <p className="text-xs font-medium text-gray-500">Date Range</p>
+          <p className="text-xs font-medium text-gray-500">{t('export.dateRange')}</p>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
+            <label className="text-xs text-gray-500 mb-1 block">{t('export.startDate')}</label>
             <input
               type="date"
               value={dateStart}
@@ -160,7 +162,7 @@ export default function Export() {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">End Date</label>
+            <label className="text-xs text-gray-500 mb-1 block">{t('export.endDate')}</label>
             <input
               type="date"
               value={dateEnd}
@@ -174,9 +176,9 @@ export default function Export() {
       {/* Summer Camp Options */}
       {scope === 'summerCamp' && (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3">
-          <p className="text-xs font-medium text-gray-500">Summer Camp 2026 Period</p>
+          <p className="text-xs font-medium text-gray-500">{t('export.summerCamp2026')} Period</p>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Camp Start</label>
+            <label className="text-xs text-gray-500 mb-1 block">{t('export.campStart')}</label>
             <input
               type="date"
               value={campStart}
@@ -185,7 +187,7 @@ export default function Export() {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Camp End</label>
+            <label className="text-xs text-gray-500 mb-1 block">{t('export.campEnd')}</label>
             <input
               type="date"
               value={campEnd}
@@ -199,7 +201,7 @@ export default function Export() {
       {/* Single Week Options */}
       {scope === 'singleWeek' && (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs font-medium text-gray-500 mb-2">Week Start (Monday)</p>
+          <p className="text-xs font-medium text-gray-500 mb-2">{t('export.weekStart')}</p>
           <input
             type="date"
             value={weekStart}
@@ -211,39 +213,39 @@ export default function Export() {
 
       {/* Collection Overview */}
       <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-        <p className="text-xs font-medium text-gray-500 mb-2">Collections Included</p>
+        <p className="text-xs font-medium text-gray-500 mb-2">{t('export.collections')}</p>
         <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
           <div className="flex items-center gap-1.5">
             <Target className="w-3 h-3 text-indigo-500" />
-            <span>Training Sessions</span>
+            <span>{t('export.trainingSessions')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <BookOpen className="w-3 h-3 text-amber-500" />
-            <span>Coach Notes</span>
+            <span>{t('export.coachNotes')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <FileJson className="w-3 h-3 text-green-500" />
-            <span>Performance Records</span>
+            <span>{t('export.performanceRecords')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Video className="w-3 h-3 text-purple-500" />
-            <span>Video References</span>
+            <span>{t('export.videoReferences')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Calendar className="w-3 h-3 text-blue-500" />
-            <span>Weekly Reviews</span>
+            <span>{t('export.weeklyReviews')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <FileSpreadsheet className="w-3 h-3 text-gray-500" />
-            <span>Body Status</span>
+            <span>{t('export.bodyStatus')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <BookOpen className="w-3 h-3 text-pink-500" />
-            <span>Journal Days</span>
+            <span>{t('export.journalDays')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Star className="w-3 h-3 text-yellow-500" />
-            <span>Milestones</span>
+            <span>{t('export.milestones')}</span>
           </div>
         </div>
       </div>
@@ -259,7 +261,7 @@ export default function Export() {
       {exported && (
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm">
           <CheckCircle className="w-4 h-4 shrink-0" />
-          <span>Export completed! File downloaded successfully.</span>
+          <span>{t('export.exportSuccess')}</span>
         </div>
       )}
 
@@ -272,12 +274,12 @@ export default function Export() {
         {exporting ? (
           <>
             <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-            Exporting...
+            {t('export.exporting')}
           </>
         ) : (
           <>
             <Download className="w-5 h-5" />
-            Export {format.toUpperCase()}
+            {t('export.exportBtn')} {format.toUpperCase()}
           </>
         )}
       </button>

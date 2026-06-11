@@ -4,17 +4,7 @@ import { ArrowRight, CalendarDays, Clock, TrendingUp, Target, Video, PenLine, He
 import { sessionService } from '../services/sessionService'
 import { athleteService } from '../services/athleteService'
 import { useAuth } from '../contexts/AuthContext'
-
-const quickLinks = [
-  { path: '/daily', label: 'Daily Log', desc: "Today's skating session", icon: CalendarDays, color: 'bg-indigo-500' },
-  { path: '/sessions', label: 'Sessions', desc: 'Training sessions history', icon: Clock, color: 'bg-emerald-500' },
-  { path: '/coach-notes', label: 'Coach Notes', desc: 'Latest coaching feedback', icon: PenLine, color: 'bg-amber-500' },
-  { path: '/performance', label: 'Performance', desc: 'Stats & progress tracking', icon: BarChart3, color: 'bg-rose-500' },
-  { path: '/body', label: 'Body Metrics', desc: 'Weight, height & fitness', icon: HeartPulse, color: 'bg-teal-500' },
-  { path: '/videos', label: 'Videos', desc: 'Technique review clips', icon: Video, color: 'bg-violet-500' },
-  { path: '/weekly-review', label: 'Weekly Review', desc: "This week's summary", icon: TrendingUp, color: 'bg-blue-500' },
-  { path: '/summer-camp', label: 'Summer Camp', desc: 'Camp schedule & notes', icon: Tent, color: 'bg-orange-500' },
-]
+import { useLanguage } from '../i18n'
 
 /** Get Monday of the week for a given YYYY-MM-DD string */
 function getWeekStart(dateStr) {
@@ -66,12 +56,24 @@ function calcStreak(sessionDates) {
 export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [birthday, setBirthday] = useState('')
   const [skatingFrom, setSkatingFrom] = useState('')
+
+  const quickLinks = [
+    { path: '/daily', label: t('dashboard.quickLinks.dailyLog'), desc: t('dashboard.quickLinks.dailyLogDesc'), icon: CalendarDays, color: 'bg-indigo-500' },
+    { path: '/sessions', label: t('dashboard.quickLinks.sessions'), desc: t('dashboard.quickLinks.sessionsDesc'), icon: Clock, color: 'bg-emerald-500' },
+    { path: '/coach-notes', label: t('dashboard.quickLinks.coachNotes'), desc: t('dashboard.quickLinks.coachNotesDesc'), icon: PenLine, color: 'bg-amber-500' },
+    { path: '/performance', label: t('dashboard.quickLinks.performance'), desc: t('dashboard.quickLinks.performanceDesc'), icon: BarChart3, color: 'bg-rose-500' },
+    { path: '/body', label: t('dashboard.quickLinks.bodyMetrics'), desc: t('dashboard.quickLinks.bodyMetricsDesc'), icon: HeartPulse, color: 'bg-teal-500' },
+    { path: '/videos', label: t('dashboard.quickLinks.videos'), desc: t('dashboard.quickLinks.videosDesc'), icon: Video, color: 'bg-violet-500' },
+    { path: '/weekly-review', label: t('dashboard.quickLinks.weeklyReview'), desc: t('dashboard.quickLinks.weeklyReviewDesc'), icon: TrendingUp, color: 'bg-blue-500' },
+    { path: '/summer-camp', label: t('dashboard.quickLinks.summerCamp'), desc: t('dashboard.quickLinks.summerCampDesc'), icon: Tent, color: 'bg-orange-500' },
+  ]
 
   useEffect(() => {
     if (!user) return
@@ -88,7 +90,7 @@ export default function Dashboard() {
         if (athlete.data?.skatingFrom) setSkatingFrom(athlete.data.skatingFrom)
       }
     } catch (e) {
-      console.error('[Dashboard] Failed to load profile:', e)
+      console.error(`[Dashboard] ${t('dashboard.failedLoadProfile')}:`, e)
     }
   }
 
@@ -172,7 +174,7 @@ export default function Dashboard() {
       const all = await sessionService.list(user.uid, 'date')
       setSessions(all)
     } catch (e) {
-      setError('Failed to load dashboard data. Check your connection or Firebase config.')
+      setError(t('dashboard.failedLoad'))
       console.error('[Dashboard] Failed to load:', e)
     } finally {
       setLoading(false)
@@ -205,23 +207,24 @@ export default function Dashboard() {
     [sessions],
   )
 
-  const formatDateLabel = (dateStr) => {
+  const formatDateLabel = (dateStr, dayNames) => {
     if (!dateStr) return ''
     const d = new Date(dateStr + 'T00:00:00')
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     return dayNames[d.getDay()]
   }
 
-  const getRelativeDay = (dateStr) => {
+  const getRelativeDay = (dateStr, dayNames) => {
     if (!dateStr) return ''
     const d = new Date(dateStr + 'T00:00:00')
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const diff = Math.round((today - d) / (1000 * 60 * 60 * 24))
-    if (diff === 0) return 'Today'
-    if (diff === 1) return 'Yesterday'
+    if (diff === 0) return t('common.today')
+    if (diff === 1) return t('common.yesterday')
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   return (
     <div className="p-4 space-y-6">
@@ -234,7 +237,7 @@ export default function Dashboard() {
           {avatarUrl ? (
             <img
               src={avatarUrl}
-              alt="Avatar"
+              alt={t('dashboard.avatar')}
               className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
             />
           ) : (
@@ -246,17 +249,17 @@ export default function Dashboard() {
             <h2 className="font-semibold text-gray-900 truncate">{displayName}</h2>
             {skatingAge !== null && (
               <p className="text-xs text-purple-600 font-medium mt-1">
-                Skating Age: {skatingAge}
+                {t('dashboard.skatingAge')}: {skatingAge}
               </p>
             )}
             {ageCategory !== null && (
               <p className="text-xs text-purple-600 font-medium mt-0.5">
-                Age Category: {ageCategory}
+                {t('dashboard.ageCategory')}: {ageCategory}
               </p>
             )}
             {skatingDuration && (
               <p className="text-xs text-purple-600 font-medium mt-1">
-                Skating for {skatingDuration.years} year{skatingDuration.years > 1 ? 's' : ''} {skatingDuration.months} month{skatingDuration.months !== 1 ? 's' : ''} {skatingDuration.days} day{skatingDuration.days !== 1 ? 's' : ''}
+                {t('dashboard.skatingFor')} {skatingDuration.years} {skatingDuration.years > 1 ? t('common.years') : t('common.year')} {skatingDuration.months} {skatingDuration.months !== 1 ? t('common.months') : t('common.month')} {skatingDuration.days} {skatingDuration.days !== 1 ? t('common.days') : t('common.day')}
               </p>
             )}
           </div>
@@ -269,32 +272,32 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <Target className="w-4 h-4 text-indigo-500" />
-            <span className="text-xs text-gray-500 font-medium">This Week</span>
+            <span className="text-xs text-gray-500 font-medium">{t('dashboard.thisWeek')}</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{weekSessions.length}</p>
-          <p className="text-xs text-gray-400">sessions</p>
+          <p className="text-xs text-gray-400">{t('common.sessions')}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs text-gray-500 font-medium">Hours</span>
+            <span className="text-xs text-gray-500 font-medium">{t('dashboard.hours')}</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{(totalTrainingMinutes / 60).toFixed(1)}</p>
-          <p className="text-xs text-gray-400">total time</p>
+          <p className="text-xs text-gray-400">{t('dashboard.totalMinutes')}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-amber-500" />
-            <span className="text-xs text-gray-500 font-medium">Streak</span>
+            <span className="text-xs text-gray-500 font-medium">{t('dashboard.streak')}</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{calcStreak(sessionDates)}</p>
-          <p className="text-xs text-gray-400">day streak</p>
+          <p className="text-xs text-gray-400">{t('dashboard.dayStreak')}</p>
         </div>
       </div>
 
       {/* Quick Links */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Quick Access</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('dashboard.quickAccess')}</h2>
         <div className="grid grid-cols-2 gap-3">
           {quickLinks.map(({ path, label, desc, icon: Icon, color }) => (
             <Link
@@ -317,11 +320,11 @@ export default function Dashboard() {
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Recent Activity</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('dashboard.recentActivity')}</h2>
         {loading ? (
           <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
             <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
-            <p className="text-sm text-gray-400">Loading...</p>
+            <p className="text-sm text-gray-400">{t('dashboard.loading')}</p>
           </div>
         ) : recentSessions.length > 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
@@ -337,13 +340,13 @@ export default function Dashboard() {
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {s.focusTags && s.focusTags.length > 0
-                        ? s.focusTags.map(t => `#${t}`).join(', ')
-                        : s.notes || 'No details'}
+                        ? s.focusTags.map(tag => `#${tag}`).join(', ')
+                        : s.notes || t('common.noDetails')}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs text-gray-400">{getRelativeDay(dateStr)}</p>
-                    <p className="text-xs text-gray-400">{formatDateLabel(dateStr)}</p>
+                    <p className="text-xs text-gray-400">{getRelativeDay(dateStr, dayNames)}</p>
+                    <p className="text-xs text-gray-400">{formatDateLabel(dateStr, dayNames)}</p>
                   </div>
                 </div>
               )
@@ -351,7 +354,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
-            <p className="text-sm text-gray-400">No sessions logged yet. Start your journey!</p>
+            <p className="text-sm text-gray-400">{t('dashboard.noSessions')}</p>
           </div>
         )}
       </div>

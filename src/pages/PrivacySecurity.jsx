@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { ArrowLeft, Save, Loader2, AlertCircle, CheckCircle, Lock, ShieldAlert, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle, Lock, ShieldAlert, Trash2 } from 'lucide-react'
+import { useLanguage } from '../i18n'
+import { en } from '../i18n/dictionaries/en'
+import { zh } from '../i18n/dictionaries/zh'
 
 export default function PrivacySecurity() {
   const navigate = useNavigate()
   const { user, isLoading, updatePasswordFn, updateEmailFn, deleteAccountFn } = useAuth()
+  const { t, lang } = useLanguage()
+  const deleteConfirmItems = lang === 'zh' ? zh.privacySecurity.deleteConfirmItems : en.privacySecurity.deleteConfirmItems
 
   // Change Password state
   const [currentPassword, setCurrentPassword] = useState('')
@@ -40,19 +45,19 @@ export default function PrivacySecurity() {
     setPasswordSuccess(false)
 
     if (!currentPassword) {
-      setPasswordError('Current password is required')
+      setPasswordError(t('privacySecurity.currentPasswordRequired'))
       return
     }
     if (!newPassword) {
-      setPasswordError('New password is required')
+      setPasswordError(t('privacySecurity.newPasswordRequired'))
       return
     }
     if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters')
+      setPasswordError(t('privacySecurity.newPasswordMinLength'))
       return
     }
     if (newPassword !== confirmNewPassword) {
-      setPasswordError('New passwords do not match')
+      setPasswordError(t('privacySecurity.passwordsMismatch'))
       return
     }
 
@@ -65,7 +70,7 @@ export default function PrivacySecurity() {
       setConfirmNewPassword('')
       setTimeout(() => setPasswordSuccess(false), 3000)
     } catch (err) {
-      setPasswordError(err.message || 'Failed to update password')
+      setPasswordError(err.message || t('privacySecurity.failedPassword'))
     } finally {
       setUpdatingPassword(false)
     }
@@ -78,7 +83,7 @@ export default function PrivacySecurity() {
     setEmailSuccess(false)
 
     if (!validateEmail(newEmail)) {
-      setEmailError('Invalid email address')
+      setEmailError(t('privacySecurity.invalidEmail'))
       return
     }
 
@@ -89,7 +94,7 @@ export default function PrivacySecurity() {
       setNewEmail('')
       setTimeout(() => setEmailSuccess(false), 3000)
     } catch (err) {
-      setEmailError(err.message || 'Failed to update email')
+      setEmailError(err.message || t('privacySecurity.failedEmail'))
     } finally {
       setUpdatingEmail(false)
     }
@@ -101,7 +106,7 @@ export default function PrivacySecurity() {
     setDeleteError('')
 
     if (!deletePassword) {
-      setDeleteError('Password is required to delete account')
+      setDeleteError(t('privacySecurity.deletePasswordRequired'))
       return
     }
 
@@ -110,7 +115,7 @@ export default function PrivacySecurity() {
       await deleteAccountFn(deletePassword)
       navigate('/login')
     } catch (err) {
-      setDeleteError(err.message || 'Failed to delete account')
+      setDeleteError(err.message || t('privacySecurity.failedDelete'))
     } finally {
       setIsDeleting(false)
     }
@@ -135,7 +140,7 @@ export default function PrivacySecurity() {
           <button onClick={() => navigate(-1)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
-          <h1 className="text-lg font-semibold text-gray-900">Privacy & Security</h1>
+          <h1 className="text-lg font-semibold text-gray-900">{t('privacySecurity.title')}</h1>
           <div className="flex-1" />
         </div>
       </div>
@@ -145,36 +150,36 @@ export default function PrivacySecurity() {
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <Lock className="w-5 h-5 text-gray-500" />
-            <h2 className="font-semibold text-gray-900">Change Password</h2>
+            <h2 className="font-semibold text-gray-900">{t('privacySecurity.changePassword')}</h2>
           </div>
           <form onSubmit={handleChangePassword} className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-gray-600">Current Password</label>
+              <label className="text-xs font-medium text-gray-600">{t('privacySecurity.currentPassword')}</label>
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
+                placeholder={t('privacySecurity.currentPasswordPlaceholder')}
                 className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">New Password</label>
+              <label className="text-xs font-medium text-gray-600">{t('privacySecurity.newPassword')}</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Min 6 characters"
+                placeholder={t('privacySecurity.newPasswordPlaceholder')}
                 className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Confirm New Password</label>
+              <label className="text-xs font-medium text-gray-600">{t('privacySecurity.confirmNewPassword')}</label>
               <input
                 type="password"
                 value={confirmNewPassword}
                 onChange={(e) => setConfirmNewPassword(e.target.value)}
-                placeholder="Re-enter new password"
+                placeholder={t('privacySecurity.confirmNewPasswordPlaceholder')}
                 className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
@@ -182,7 +187,7 @@ export default function PrivacySecurity() {
             {passwordSuccess && (
               <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
                 <CheckCircle className="w-4 h-4 shrink-0" />
-                <span>Password updated successfully!</span>
+                <span>{t('privacySecurity.passwordUpdated')}</span>
               </div>
             )}
             <button
@@ -193,10 +198,10 @@ export default function PrivacySecurity() {
               {updatingPassword ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Updating...
+                  {t('privacySecurity.updatingPassword')}
                 </span>
               ) : (
-                'Update Password'
+                t('privacySecurity.updatePassword')
               )}
             </button>
           </form>
@@ -206,25 +211,25 @@ export default function PrivacySecurity() {
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <ShieldAlert className="w-5 h-5 text-gray-500" />
-            <h2 className="font-semibold text-gray-900">Bind Email</h2>
+            <h2 className="font-semibold text-gray-900">{t('privacySecurity.bindEmail')}</h2>
           </div>
           {user?.email ? (
             <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700">
               <CheckCircle className="w-4 h-4 shrink-0" />
               <div>
-                <p className="text-sm font-medium">Email already bound</p>
+                <p className="text-sm font-medium">{t('privacySecurity.emailBound')}</p>
                 <p className="text-xs text-green-600">{user.email}</p>
               </div>
             </div>
           ) : (
             <form onSubmit={handleUpdateEmail} className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">New Email</label>
+                <label className="text-xs font-medium text-gray-600">{t('privacySecurity.newEmail')}</label>
                 <input
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="Enter new email address"
+                  placeholder={t('privacySecurity.newEmailPlaceholder')}
                   className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
@@ -232,7 +237,7 @@ export default function PrivacySecurity() {
               {emailSuccess && (
                 <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
                   <CheckCircle className="w-4 h-4 shrink-0" />
-                  <span>Email updated successfully!</span>
+                  <span>{t('privacySecurity.emailUpdated')}</span>
                 </div>
               )}
               <button
@@ -243,10 +248,10 @@ export default function PrivacySecurity() {
                 {updatingEmail ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Updating...
+                    {t('privacySecurity.updatingEmail')}
                   </span>
                 ) : (
-                  'Bind Email'
+                  t('privacySecurity.bindEmailBtn')
                 )}
               </button>
             </form>
@@ -257,16 +262,16 @@ export default function PrivacySecurity() {
         <div className="bg-white rounded-xl p-4 shadow-sm border border-red-200">
           <div className="flex items-center gap-2 mb-4">
             <Trash2 className="w-5 h-5 text-red-500" />
-            <h2 className="font-semibold text-red-600">Delete Account</h2>
+            <h2 className="font-semibold text-red-600">{t('privacySecurity.deleteAccount')}</h2>
           </div>
           <p className="text-sm text-gray-600 mb-4">
-            Once you delete your account, all your data including training sessions, notes, and reviews will be permanently removed. This action cannot be undone.
+            {t('privacySecurity.deleteAccountWarning')}
           </p>
           <button
-            onClick={() => setDeleteStep(1)}
+            onClick={() => { setShowDeleteConfirm(true); setDeleteStep(1) }}
             className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
           >
-            Delete Account
+            {t('privacySecurity.deleteBtn')}
           </button>
         </div>
       </div>
@@ -277,29 +282,27 @@ export default function PrivacySecurity() {
           <div className="bg-white rounded-xl p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto">
             {deleteStep === 1 && (
               <>
-                <h3 className="font-semibold text-gray-900 mb-2">⚠️ Delete Account?</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('privacySecurity.deleteConfirmTitle')}</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  This will permanently delete your account and all associated data. This includes:
+                  {t('privacySecurity.deleteConfirmText')}
                 </p>
                 <ul className="text-sm text-gray-500 list-disc list-inside mb-4 space-y-1">
-                  <li>Training sessions and records</li>
-                  <li>Coach notes</li>
-                  <li>Weekly reviews</li>
-                  <li>Profile information</li>
-                  <li>Photos and data</li>
+                  {deleteConfirmItems.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
                 </ul>
                 <div className="flex gap-2">
                   <button
                     onClick={() => { setDeleteStep(2); setShowDeleteConfirm(false) }}
                     className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2.5 rounded-lg transition-colors"
                   >
-                    I understand
+                    {t('privacySecurity.deleteConfirmUnderstand')}
                   </button>
                   <button
                     onClick={() => { setShowDeleteConfirm(false); setDeleteStep(0) }}
                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </>
@@ -307,15 +310,15 @@ export default function PrivacySecurity() {
 
             {deleteStep === 2 && (
               <>
-                <h3 className="font-semibold text-gray-900 mb-2">Type "DELETE" to confirm</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('privacySecurity.deleteConfirmType')}</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  To confirm account deletion, please type DELETE below.
+                  {t('privacySecurity.deleteConfirmHint')}
                 </p>
                 <input
                   type="text"
                   value={deleteType}
                   onChange={(e) => setDeleteType(e.target.value)}
-                  placeholder="Type DELETE"
+                  placeholder="DELETE"
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 />
                 <div className="flex gap-2 mt-4">
@@ -328,13 +331,13 @@ export default function PrivacySecurity() {
                     disabled={deleteType.toUpperCase() !== 'DELETE'}
                     className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white font-medium py-2.5 rounded-lg transition-colors"
                   >
-                    Next
+                    {t('common.next')}
                   </button>
                   <button
                     onClick={() => { setDeleteStep(1); setDeleteType('') }}
                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors"
                   >
-                    Back
+                    {t('common.back')}
                   </button>
                 </div>
               </>
@@ -342,16 +345,16 @@ export default function PrivacySecurity() {
 
             {deleteStep === 3 && (
               <>
-                <h3 className="font-semibold text-gray-900 mb-2">Enter your password</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('privacySecurity.deletePassword')}</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  For security, please enter your current password to confirm.
+                  {t('privacySecurity.deletePasswordHint')}
                 </p>
                 <form onSubmit={handleDeleteAccount} className="space-y-3">
                   <input
                     type="password"
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
-                    placeholder="Current password"
+                    placeholder={t('privacySecurity.deleteCurrentPassword')}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   />
                   {renderError(deleteError)}
@@ -364,10 +367,10 @@ export default function PrivacySecurity() {
                       {isDeleting ? (
                         <span className="flex items-center justify-center gap-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Deleting...
+                          {t('privacySecurity.deleting')}
                         </span>
                       ) : (
-                        'Delete Account'
+                        t('privacySecurity.deleteBtn')
                       )}
                     </button>
                     <button
@@ -375,7 +378,7 @@ export default function PrivacySecurity() {
                       onClick={() => { setDeleteStep(2); setDeleteType(''); setDeletePassword('') }}
                       className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors"
                     >
-                      Back
+                      {t('common.back')}
                     </button>
                   </div>
                 </form>

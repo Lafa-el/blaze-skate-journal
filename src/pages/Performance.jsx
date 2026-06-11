@@ -2,19 +2,21 @@ import { useState, useEffect } from 'react'
 import { Trophy, Plus, Trash2, ChevronLeft, Target, StopCircle } from 'lucide-react'
 import { performanceService } from '../services/performanceService'
 import { useAuth } from '../contexts/AuthContext'
+import { useLanguage } from '../i18n'
 
 const eventTypes = [
-  { value: 'single_lap', label: 'Single Lap' },
-  { value: 'first_lap', label: 'First Lap' },
-  { value: '500m', label: '500m' },
-  { value: '777m', label: '777m' },
-  { value: '1000m', label: '1000m' },
-  { value: '1500m', label: '1500m' },
-  { value: 'relay', label: 'Relay' },
+  { value: 'single_lap', labelKey: 'performance.eventTypes.singleLap' },
+  { value: 'first_lap', labelKey: 'performance.eventTypes.firstLap' },
+  { value: '500m', labelKey: 'performance.eventTypes.lap500' },
+  { value: '777m', labelKey: 'performance.eventTypes.lap777' },
+  { value: '1000m', labelKey: 'performance.eventTypes.lap1000' },
+  { value: '1500m', labelKey: 'performance.eventTypes.lap1500' },
+  { value: 'relay', labelKey: 'performance.eventTypes.relay' },
 ]
 
 export default function Performance() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [records, setRecords] = useState([])
@@ -46,7 +48,7 @@ export default function Performance() {
       const all = await performanceService.list({ metric: selectedEvent !== 'all' ? selectedEvent : undefined }, user.uid)
       setRecords(all)
     } catch (e) {
-      setError('Failed to load performance records. Check your connection or Firebase config.')
+      setError(t('performance.failedLoad'))
       console.error('[Performance] Failed to load:', e)
     }
   }
@@ -155,8 +157,8 @@ export default function Performance() {
     <div className="p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Performance</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Track your progress & PBs</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('performance.title')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('performance.subtitle')}</p>
       </div>
 
       {/* Error Banner */}
@@ -171,12 +173,12 @@ export default function Performance() {
         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-5 text-white">
           <div className="flex items-center gap-2 mb-4">
             <Trophy className="w-5 h-5" />
-            <h2 className="font-bold text-lg">Personal Bests</h2>
+            <h2 className="font-bold text-lg">{t('performance.pb')}</h2>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {pbEvents.map((et) => (
               <div key={et.value} className="bg-white/10 rounded-lg p-3">
-                <p className="text-xs text-indigo-200 font-medium">{et.label}</p>
+                <p className="text-xs text-indigo-200 font-medium">{t(et.labelKey)}</p>
                 <p className="text-xl font-bold">{formatTime(pbList[et.value])}</p>
               </div>
             ))}
@@ -186,16 +188,16 @@ export default function Performance() {
 
       {/* Event Type Filter */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
-        <button
-          onClick={() => setSelectedEvent('all')}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-            selectedEvent === 'all'
-              ? 'bg-primary text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          All
-        </button>
+            <button
+              onClick={() => setSelectedEvent('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                selectedEvent === 'all'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {t('common.all')}
+            </button>
         {eventTypes.map((et) => (
           <button
             key={et.value}
@@ -206,7 +208,7 @@ export default function Performance() {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {et.label}
+            {t(et.labelKey)}
           </button>
         ))}
       </div>
@@ -225,7 +227,7 @@ export default function Performance() {
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-900">{event ? event.replace(/_/g, ' ') : 'Unknown'}</h3>
+                        <h3 className="font-semibold text-gray-900">{event ? event.replace(/_/g, ' ') : t('common.unknown')}</h3>
                         {isPB && (
                           <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                             <Trophy className="w-3 h-3" />
@@ -243,14 +245,14 @@ export default function Performance() {
                       <button
                         onClick={() => startEdit(record)}
                         className="p-1.5 rounded-lg hover:bg-gray-100"
-                        title="Edit"
+                        title={t('common.edit')}
                       >
                         <ChevronLeft className="w-4 h-4 text-gray-400 rotate-180" />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(record.docId)}
                         className="p-1.5 rounded-lg hover:bg-red-50"
-                        title="Delete"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="w-4 h-4 text-red-400" />
                       </button>
@@ -270,7 +272,7 @@ export default function Performance() {
       {records.length === 0 && !showForm && (
         <div className="text-center py-8 text-gray-400">
           <Target className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No performance records yet</p>
+          <p className="text-sm">{t('performance.noRecords')}</p>
         </div>
       )}
 
@@ -278,12 +280,12 @@ export default function Performance() {
       {showForm ? (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
           <h3 className="font-semibold text-gray-900">
-            {editId ? 'Edit Record' : 'Add Performance Record'}
+            {editId ? t('performance.editRecord') : t('performance.addRecord')}
           </h3>
 
           {/* Event Type */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Event Type</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('performance.eventType')}</label>
             <div className="grid grid-cols-2 gap-1.5">
               {eventTypes.map((et) => (
                 <button
@@ -295,7 +297,7 @@ export default function Performance() {
                       : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  {et.label}
+                  {t(et.labelKey)}
                 </button>
               ))}
             </div>
@@ -303,12 +305,12 @@ export default function Performance() {
 
           {/* Time */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Time (seconds)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('performance.time')}</label>
             <input
               type="number"
               value={form.timeSeconds}
               onChange={(e) => updateField('timeSeconds', e.target.value)}
-              placeholder="e.g. 48.92"
+              placeholder={t('performance.timePlaceholder')}
               step="0.01"
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
@@ -316,12 +318,12 @@ export default function Performance() {
 
           {/* Context */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Context</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('performance.context')}</label>
             <div className="flex gap-1.5">
               {[
-                { value: 'training_test', label: 'Training' },
-                { value: 'competition', label: 'Competition' },
-                { value: 'exhibition', label: 'Exhibition' },
+                { value: 'training_test', labelKey: 'performance.contextOptions.training' },
+                { value: 'competition', labelKey: 'performance.contextOptions.competition' },
+                { value: 'exhibition', labelKey: 'performance.contextOptions.exhibition' },
               ].map((opt) => (
                 <button
                   key={opt.value}
@@ -332,7 +334,7 @@ export default function Performance() {
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </button>
               ))}
             </div>
@@ -340,11 +342,11 @@ export default function Performance() {
 
           {/* Notes */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Notes (optional)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('performance.notes')}</label>
             <textarea
               value={form.notes}
               onChange={(e) => updateField('notes', e.target.value)}
-              placeholder="Notes about this time..."
+              placeholder={t('performance.notesPlaceholder')}
               rows={2}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
             />
@@ -357,13 +359,13 @@ export default function Performance() {
               disabled={loading}
               className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
             >
-              {loading ? 'Saving...' : editId ? 'Update' : 'Save Record'}
+              {loading ? t('common.saving') : editId ? t('common.update') : t('performance.saveRecord')}
             </button>
             <button
               onClick={resetForm}
               className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -373,7 +375,7 @@ export default function Performance() {
           className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          Add Record
+          {t('performance.addRecord')}
         </button>
       )}
 
@@ -381,20 +383,20 @@ export default function Performance() {
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold text-gray-900 mb-2">Delete Record?</h3>
-            <p className="text-sm text-gray-600 mb-4">This action cannot be undone.</p>
+            <h3 className="font-semibold text-gray-900 mb-2">{t('performance.deleteRecord')}</h3>
+            <p className="text-sm text-gray-600 mb-4">{t('performance.deleteRecordConfirm')}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => handleDelete(deleteConfirm)}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-lg"
               >
-                Delete
+                {t('common.delete')}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 rounded-lg"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>

@@ -6,14 +6,15 @@ import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase/firestore'
 import { auth } from '../firebase/auth'
 import { updateProfile as firebaseUpdateProfile } from 'firebase/auth'
-import { ArrowLeft, Save, Loader2, User, Camera, Calendar } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, User, Camera } from 'lucide-react'
+import { useLanguage } from '../i18n'
 
-const LEVELS = ['Beginner', 'Intermediate', 'Advanced']
 const MAX_BIO_LENGTH = 500
 
 export default function EditProfile() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -53,14 +54,14 @@ export default function EditProfile() {
           window.__athleteDocId = result
         }
       } catch (e) {
-        setError('Failed to load profile: ' + e.message)
+        setError(t('editProfile.failedLoad') + ': ' + e.message)
         console.error('[EditProfile] Load error:', e)
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [user])
+  }, [user, t])
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0]
@@ -74,11 +75,11 @@ export default function EditProfile() {
 
   const handleSave = async () => {
     if (!displayName.trim()) {
-      setError('Display name is required')
+      setError(t('editProfile.displayNameRequired'))
       return
     }
     if (bio.length > MAX_BIO_LENGTH) {
-      setError(`Bio must be ${MAX_BIO_LENGTH} characters or less`)
+      setError(t('editProfile.bioMaxLength'))
       return
     }
 
@@ -121,7 +122,7 @@ export default function EditProfile() {
 
       navigate('/settings')
     } catch (e) {
-      setError('Failed to save profile: ' + e.message)
+      setError(t('editProfile.failedSave') + ': ' + e.message)
       console.error('[EditProfile] Save error:', e)
     } finally {
       setSaving(false)
@@ -144,7 +145,7 @@ export default function EditProfile() {
           <button onClick={() => navigate(-1)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
-          <h1 className="text-lg font-semibold text-gray-900">Edit Profile</h1>
+          <h1 className="text-lg font-semibold text-gray-900">{t('editProfile.title')}</h1>
           <div className="flex-1" />
           <button
             onClick={handleSave}
@@ -152,7 +153,7 @@ export default function EditProfile() {
             className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            Save
+            {t('editProfile.save')}
           </button>
         </div>
       </div>
@@ -183,17 +184,17 @@ export default function EditProfile() {
               <Camera className="w-4 h-4 text-white" />
             </label>
           </div>
-          <p className="text-xs text-gray-400">Click camera to change avatar</p>
+          <p className="text-xs text-gray-400">{t('editProfile.clickCamera')}</p>
         </div>
 
         {/* Display Name */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <label className="text-sm font-medium text-gray-700">Display Name</label>
+          <label className="text-sm font-medium text-gray-700">{t('editProfile.displayName')}</label>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Enter your name"
+            placeholder={t('editProfile.displayNamePlaceholder')}
             className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
@@ -201,7 +202,7 @@ export default function EditProfile() {
         {/* Bio */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-700">Bio</label>
+            <label className="text-sm font-medium text-gray-700">{t('editProfile.bio')}</label>
             <span className={`text-xs ${bio.length > MAX_BIO_LENGTH ? 'text-red-500' : 'text-gray-400'}`}>
               {bio.length}/{MAX_BIO_LENGTH}
             </span>
@@ -209,7 +210,7 @@ export default function EditProfile() {
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            placeholder="Tell us about yourself..."
+            placeholder={t('editProfile.bioPlaceholder')}
             rows={4}
             maxLength={MAX_BIO_LENGTH}
             className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
@@ -218,7 +219,7 @@ export default function EditProfile() {
 
         {/* Skating From */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <label className="text-sm font-medium text-gray-700">Skating From</label>
+          <label className="text-sm font-medium text-gray-700">{t('editProfile.skatingFrom')}</label>
           <input
             type="date"
             value={skatingFrom}
@@ -226,12 +227,12 @@ export default function EditProfile() {
             placeholder="MM/DD/YYYY"
             className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent appearance-none bg-white"
           />
-          <p className="text-xs text-gray-400 mt-1">When did you start skating?</p>
+          <p className="text-xs text-gray-400 mt-1">{t('editProfile.skatingFromPlaceholder')}</p>
         </div>
 
         {/* Birthday */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <label className="text-sm font-medium text-gray-700">Birthday</label>
+          <label className="text-sm font-medium text-gray-700">{t('editProfile.birthday')}</label>
           <input
             type="date"
             value={birthday}
@@ -239,13 +240,13 @@ export default function EditProfile() {
             placeholder="MM/DD/YYYY"
             className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent appearance-none bg-white"
           />
-          <p className="text-xs text-gray-400 mt-1">Your date of birth</p>
+          <p className="text-xs text-gray-400 mt-1">{t('editProfile.birthdayPlaceholder')}</p>
         </div>
 
         {/* Email (read-only) */}
         {user?.email && (
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <label className="text-sm font-medium text-gray-500">Email</label>
+            <label className="text-sm font-medium text-gray-500">{t('editProfile.email')}</label>
             <p className="mt-1 text-sm text-gray-700">{user.email}</p>
           </div>
         )}

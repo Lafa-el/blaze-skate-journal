@@ -2,15 +2,11 @@ import { useState, useEffect } from 'react'
 import { Calendar as CalendarIcon, Clock, MapPin, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { sessionService } from '../services/sessionService'
 import { useAuth } from '../contexts/AuthContext'
-
-const monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
-const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+import { useLanguage } from '../i18n'
 
 export default function Calendar() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [sessions, setSessions] = useState([])
@@ -20,12 +16,10 @@ export default function Calendar() {
   })
   const [selectedDate, setSelectedDate] = useState(null)
 
-  // Load sessions for the current month
-  useEffect(() => {
-    if (!user) return
-    loadSessions()
-  }, [user, currentMonth])
+  const monthNames = t('calendar.monthNames')
+  const dayNames = t('calendar.dayNames')
 
+  // Load sessions for the current month
   const loadSessions = async () => {
     setError('')
     if (!user) return
@@ -46,12 +40,18 @@ export default function Calendar() {
       monthSessions.sort((a, b) => (a.data.date || '').localeCompare(b.data.date || ''))
       setSessions(monthSessions)
     } catch (e) {
-      setError('Failed to load calendar data. Check your connection or Firebase config.')
+      setError(t('calendar.failedLoad'))
       console.error('[Calendar] Failed to load:', e)
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!user) return
+    loadSessions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, currentMonth])
 
   const goToPrevMonth = () => {
     const { year, month } = currentMonth
@@ -123,7 +123,7 @@ export default function Calendar() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('calendar.title')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {monthNames[currentMonth.month]} {currentMonth.year}
           </p>
@@ -211,7 +211,7 @@ export default function Calendar() {
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="font-semibold text-gray-900">
-                          {s.sessionLabel || `${s.sessionType.charAt(0).toUpperCase() + s.sessionType.slice(1)} Session`}
+                          {s.sessionLabel || `${s.sessionType.charAt(0).toUpperCase() + s.sessionType.slice(1)} ${t('calendar.session')}`}
                         </p>
                         {s.coachName && (
                           <p className="text-sm text-gray-500">{s.coachName}</p>
@@ -226,7 +226,7 @@ export default function Calendar() {
                       {s.durationMinutes && (
                         <div className="flex items-center gap-2">
                           <Clock className="w-3.5 h-3.5 text-gray-400" />
-                          <span>{s.durationMinutes} minutes</span>
+                          <span>{s.durationMinutes} {t('common.minutes')}</span>
                         </div>
                       )}
                       {s.focusTags && s.focusTags.length > 0 && (
@@ -245,7 +245,7 @@ export default function Calendar() {
 
                     {s.intensity && (
                       <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-1">
-                        <span className="text-xs text-gray-400">Intensity:</span>
+                        <span className="text-xs text-gray-400">{t('common.intensity')}:</span>
                         {Array.from({ length: 5 }, (_, i) => (
                           <div
                             key={i}
@@ -264,7 +264,7 @@ export default function Calendar() {
           ) : (
             <div className="text-center py-6 text-gray-400">
               <CalendarIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No sessions for this day</p>
+              <p className="text-sm">{t('calendar.noSessionsForDay')}</p>
             </div>
           )}
         </div>
@@ -274,7 +274,7 @@ export default function Calendar() {
       {!selectedDate && sessions.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-3">
-            This Month's Sessions ({sessions.length})
+            {t('calendar.sessionsThisMonth')} ({sessions.length})
           </h2>
           <div className="space-y-3">
             {sessions.map((session) => {
@@ -299,7 +299,7 @@ export default function Calendar() {
                     {s.durationMinutes && (
                       <div className="flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{s.durationMinutes} min</span>
+                        <span>{s.durationMinutes} {t('common.minutes')}</span>
                       </div>
                     )}
                     {s.coachName && (
@@ -320,7 +320,7 @@ export default function Calendar() {
       {loading && (
         <div className="text-center py-8 text-gray-400">
           <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
-          <p className="text-sm">Loading calendar...</p>
+          <p className="text-sm">{t('calendar.loading')}</p>
         </div>
       )}
 
@@ -328,8 +328,8 @@ export default function Calendar() {
       {!loading && sessions.length === 0 && !selectedDate && (
         <div className="text-center py-8 text-gray-400">
           <Sparkles className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No sessions for {monthNames[currentMonth.month]} {currentMonth.year}</p>
-          <p className="text-xs text-gray-300 mt-1">Start logging sessions to see them here</p>
+          <p className="text-sm">{t('calendar.noSessionsForMonth')} {monthNames[currentMonth.month]} {currentMonth.year}</p>
+          <p className="text-xs text-gray-300 mt-1">{t('calendar.startLogging')}</p>
         </div>
       )}
     </div>

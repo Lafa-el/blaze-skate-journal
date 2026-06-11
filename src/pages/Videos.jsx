@@ -2,20 +2,23 @@ import { useState, useEffect } from 'react'
 import { Film, Plus, Trash2, Edit3, ExternalLink, Tag, Clock, FileVideo, X } from 'lucide-react'
 import { videoService } from '../services/videoService'
 import { useAuth } from '../contexts/AuthContext'
+import { useLanguage } from '../i18n'
 
 const ANALYSIS_STATUSES = [
-  { value: 'pending', label: 'Pending', color: 'bg-gray-100 text-gray-600' },
-  { value: 'analyzing', label: 'Analyzing', color: 'bg-amber-100 text-amber-700' },
-  { value: 'completed', label: 'Completed', color: 'bg-green-100 text-green-700' },
+  { value: 'pending', labelKey: 'common.pending', color: 'bg-gray-100 text-gray-600' },
+  { value: 'analyzing', labelKey: 'common.analyzing', color: 'bg-amber-100 text-amber-700' },
+  { value: 'completed', labelKey: 'common.completed', color: 'bg-green-100 text-green-700' },
 ]
 
 const TECHNICAL_TAG_OPTIONS = [
-  'edge', 'turn', 'jump', 'spin', 'footwork', 'flow',
-  'step_sequence', 'combo', 'alignment', 'speed', 'other',
+  { key: 'edge' }, { key: 'turn' }, { key: 'jump' }, { key: 'spin' }, { key: 'footwork' },
+  { key: 'flow' }, { key: 'step_sequence' }, { key: 'combo' },
+  { key: 'alignment' }, { key: 'speed' }, { key: 'other' },
 ]
 
 export default function Videos() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [videos, setVideos] = useState([])
@@ -54,7 +57,7 @@ export default function Videos() {
       const all = await videoService.list(filters, user.uid)
       setVideos(all)
     } catch (e) {
-      setError('Failed to load videos. Check your connection or Firebase config.')
+      setError(t('videos.failedLoad'))
       console.error('[Videos] Failed to load:', e)
     } finally {
       setLoading(false)
@@ -148,8 +151,8 @@ export default function Videos() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Video References</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Technique review clips & analysis</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('videos.title')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t('videos.subtitle')}</p>
         </div>
       </div>
 
@@ -178,7 +181,7 @@ export default function Videos() {
       {/* Filters */}
       <div className="space-y-3">
         <div>
-          <p className="text-xs font-medium text-gray-500 mb-1.5">Analysis Status</p>
+          <p className="text-xs font-medium text-gray-500 mb-1.5">{t('videos.analysisStatus')}</p>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             <button
               onClick={() => setSelectedStatus('all')}
@@ -188,7 +191,7 @@ export default function Videos() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              All
+              {t('common.all')}
             </button>
             {ANALYSIS_STATUSES.map((status) => (
               <button
@@ -200,7 +203,7 @@ export default function Videos() {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {status.label}
+                {t(status.labelKey)}
               </button>
             ))}
           </div>
@@ -208,7 +211,7 @@ export default function Videos() {
 
         {uniqueSessions.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-gray-500 mb-1.5">Session</p>
+            <p className="text-xs font-medium text-gray-500 mb-1.5">{t('common.session')}</p>
             <div className="flex gap-1.5 overflow-x-auto pb-1">
               <button
                 onClick={() => setSelectedSession('all')}
@@ -218,7 +221,7 @@ export default function Videos() {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                All
+                {t('common.all')}
               </button>
               {uniqueSessions.map((session) => (
                 <button
@@ -242,7 +245,7 @@ export default function Videos() {
       {loading && (
         <div className="text-center py-8 text-gray-400">
           <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
-          <p className="text-sm">Loading...</p>
+          <p className="text-sm">{t('common.loading')}</p>
         </div>
       )}
 
@@ -262,29 +265,28 @@ export default function Videos() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="font-semibold text-gray-900 text-sm truncate">{v.title || 'Untitled'}</h3>
+                          <h3 className="font-semibold text-gray-900 text-sm truncate">{v.title || t('common.untitled')}</h3>
                           {v.fileName && (
                             <p className="text-xs text-gray-400 mt-0.5 truncate">{v.fileName}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle}`}>
-                            {ANALYSIS_STATUSES.find(s => s.value === v.analysisStatus)?.label || v.analysisStatus}
+                            {t(status.labelKey) || v.analysisStatus}
                           </span>
                         </div>
                       </div>
 
-                      {/* Tags */}
-                      {v.technicalTags && v.technicalTags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {v.technicalTags.map((tag) => (
-                            <span key={tag} className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Tag className="w-2.5 h-2.5" />
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                          {v.technicalTags && v.technicalTags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {v.technicalTags.map((tag) => (
+                                <span key={tag} className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Tag className="w-2.5 h-2.5" />
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
 
                       {/* Metadata */}
                       <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-400">
@@ -302,7 +304,7 @@ export default function Videos() {
                             className="flex items-center gap-1 text-indigo-500 hover:text-indigo-600"
                           >
                             <ExternalLink className="w-3 h-3" />
-                            Link
+                            {t('common.linked')}
                           </a>
                         )}
                       </div>
@@ -320,14 +322,14 @@ export default function Videos() {
                     <button
                       onClick={() => startEdit(video)}
                       className="p-1.5 rounded-lg hover:bg-gray-100"
-                      title="Edit"
+                      title={t('common.edit')}
                     >
                       <Edit3 className="w-4 h-4 text-gray-400" />
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(video.docId)}
                       className="p-1.5 rounded-lg hover:bg-red-50"
-                      title="Delete"
+                      title={t('common.delete')}
                     >
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
@@ -342,7 +344,7 @@ export default function Videos() {
       {videos.length === 0 && !loading && !showForm && (
         <div className="text-center py-8 text-gray-400">
           <FileVideo className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No video references yet</p>
+          <p className="text-sm">{t('videos.noVideos')}</p>
         </div>
       )}
 
@@ -351,7 +353,7 @@ export default function Videos() {
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900">
-              {editId ? 'Edit Video Reference' : 'Add Video Reference'}
+              {editId ? t('videos.editVideo') : t('videos.addVideo')}
             </h3>
             <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-gray-100">
               <X className="w-4 h-4 text-gray-400" />
@@ -360,67 +362,67 @@ export default function Videos() {
 
           {/* Title */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Title *</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('videos.titleField')}</label>
             <input
               type="text"
               value={form.title}
               onChange={(e) => updateField('title', e.target.value)}
-              placeholder="e.g. Double Axel Practice"
+              placeholder={t('videos.titlePlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
 
           {/* File Name */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">File Name</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('videos.fileName')}</label>
             <input
               type="text"
               value={form.fileName}
               onChange={(e) => updateField('fileName', e.target.value)}
-              placeholder="e.g. da_practice_20260607.mp4"
+              placeholder={t('videos.fileNamePlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
 
           {/* External URL */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">External URL</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('videos.externalUrl')}</label>
             <input
               type="url"
               value={form.externalUrl}
               onChange={(e) => updateField('externalUrl', e.target.value)}
-              placeholder="https://youtube.com/watch?v=..."
+              placeholder={t('videos.urlPlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
 
           {/* Session ID */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Session ID</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('videos.sessionId')}</label>
             <input
               type="text"
               value={form.sessionId}
               onChange={(e) => updateField('sessionId', e.target.value)}
-              placeholder="e.g. session-2026-06-07"
+              placeholder={t('videos.sessionIdPlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
 
           {/* Technical Tags */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Technical Tags</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('videos.technicalTags')}</label>
             <div className="flex flex-wrap gap-1.5">
               {TECHNICAL_TAG_OPTIONS.map((tag) => (
                 <button
-                  key={tag}
-                  onClick={() => toggleTag(tag)}
+                  key={tag.key}
+                  onClick={() => toggleTag(tag.key)}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
-                    form.technicalTags.includes(tag)
+                    form.technicalTags.includes(tag.key)
                       ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  {tag}
+                  {tag.key.replace(/_/g, ' ')}
                 </button>
               ))}
             </div>
@@ -428,7 +430,7 @@ export default function Videos() {
 
           {/* Analysis Status */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Analysis Status</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('videos.analysisStatus')}</label>
             <div className="flex gap-1.5">
               {ANALYSIS_STATUSES.map((status) => (
                 <button
@@ -440,7 +442,7 @@ export default function Videos() {
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  {status.label}
+                  {t(status.labelKey)}
                 </button>
               ))}
             </div>
@@ -448,11 +450,11 @@ export default function Videos() {
 
           {/* Notes */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Notes (optional)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('videos.videoNotes')}</label>
             <textarea
               value={form.notes}
               onChange={(e) => updateField('notes', e.target.value)}
-              placeholder="Notes about this video..."
+              placeholder={t('videos.videoNotesPlaceholder')}
               rows={2}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
             />
@@ -465,13 +467,13 @@ export default function Videos() {
               disabled={loading || !form.title.trim()}
               className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
             >
-              {loading ? 'Saving...' : editId ? 'Update' : 'Save'}
+              {loading ? t('common.saving') : editId ? t('common.update') : t('common.save')}
             </button>
             <button
               onClick={resetForm}
               className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -481,20 +483,20 @@ export default function Videos() {
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold text-gray-900 mb-2">Delete Video Reference?</h3>
-            <p className="text-sm text-gray-600 mb-4">This action cannot be undone.</p>
+            <h3 className="font-semibold text-gray-900 mb-2">{t('videos.deleteVideo')}</h3>
+            <p className="text-sm text-gray-600 mb-4">{t('videos.deleteVideoConfirm')}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => handleDelete(deleteConfirm)}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-lg"
               >
-                Delete
+                {t('common.delete')}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 rounded-lg"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>

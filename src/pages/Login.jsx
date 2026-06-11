@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Mail, Lock, User, ArrowLeft, Loader2, AlertCircle, CheckCircle, Flame } from 'lucide-react'
+import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle, Flame } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useLanguage } from '../i18n'
 
+/* eslint-disable react-hooks/set-state-in-effect */
 export default function Login() {
   const { signInWithEmail, signUpWithEmail, resetPasswordEmail, isLoading, signInError, signUpError, resetError } = useAuth()
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   const [mode, setMode] = useState('login') // 'login', 'register', 'reset'
   const [email, setEmail] = useState('')
@@ -17,13 +20,20 @@ export default function Login() {
 
   // Clear state when switching modes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEmail('')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPassword('')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDisplayName('')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConfirmPassword('')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowPassword(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResetSent(false)
   }, [mode])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const validateEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -47,7 +57,7 @@ export default function Login() {
     try {
       await signInWithEmail(email, password)
       navigate('/dashboard')
-    } catch (error) {
+    } catch {
       // Error is handled by AuthContext
     }
   }
@@ -74,7 +84,7 @@ export default function Login() {
     try {
       await signUpWithEmail(email, password, displayName.trim())
       navigate('/dashboard')
-    } catch (error) {
+    } catch {
       // Error is handled by AuthContext
     }
   }
@@ -89,12 +99,10 @@ export default function Login() {
     try {
       await resetPasswordEmail(email)
       setResetSent(true)
-    } catch (error) {
+    } catch {
       // Error is handled by AuthContext
     }
   }
-
-  // Render error message
   const renderError = (error) => {
     if (!error) return null
     return (
@@ -113,8 +121,8 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-4">
             <Flame className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Blaze Skate Journal</h1>
-          <p className="text-sm text-gray-500 mt-1">Track your skating journey</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('login.brand')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('login.tagline')}</p>
         </div>
 
         {/* Card */}
@@ -129,7 +137,7 @@ export default function Login() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Sign In
+              {t('login.signIn')}
             </button>
             <button
               onClick={() => setMode('register')}
@@ -139,7 +147,7 @@ export default function Login() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Create Account
+              {t('login.createAccount')}
             </button>
             <button
               onClick={() => setMode('reset')}
@@ -149,7 +157,7 @@ export default function Login() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Forgot Password
+              {t('login.forgotPassword')}
             </button>
           </div>
 
@@ -160,7 +168,7 @@ export default function Login() {
           {resetSent && (
             <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm mb-4">
               <CheckCircle className="w-4 h-4 shrink-0" />
-              <span>Reset email sent! Check your inbox.</span>
+              <span>{t('login.resetSent')}</span>
             </div>
           )}
 
@@ -168,14 +176,14 @@ export default function Login() {
           {mode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
+                    placeholder={t('login.emailPlaceholder')}
                     required
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
@@ -183,14 +191,14 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={t('login.passwordPlaceholder')}
                     required
                     className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
@@ -199,7 +207,7 @@ export default function Login() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
                   >
-                    {showPassword ? 'Hide' : 'Show'}
+                    {showPassword ? t('login.hide') : t('login.show')}
                   </button>
                 </div>
               </div>
@@ -212,10 +220,10 @@ export default function Login() {
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Signing in...
+                    {t('login.signingIn')}
                   </span>
                 ) : (
-                  'Sign In'
+                  t('login.signIn')
                 )}
               </button>
             </form>
@@ -224,14 +232,14 @@ export default function Login() {
           {mode === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.name')}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder={t('login.namePlaceholder')}
                     required
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
@@ -239,14 +247,14 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
+                    placeholder={t('login.emailPlaceholder')}
                     required
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
@@ -254,14 +262,14 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min 6 characters"
+                    placeholder={t('login.passwordMinLength')}
                     required
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
@@ -269,14 +277,14 @@ export default function Login() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.confirmPassword')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={t('login.passwordPlaceholder')}
                     required
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
@@ -291,10 +299,10 @@ export default function Login() {
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Creating account...
+                    {t('login.creatingAccount')}
                   </span>
                 ) : (
-                  'Create Account'
+                  t('login.createAccount')
                 )}
               </button>
             </form>
@@ -303,18 +311,18 @@ export default function Login() {
           {mode === 'reset' && (
             <div>
               <p className="text-sm text-gray-600 mb-4">
-                Enter your email and we'll send you a link to reset your password.
+                {t('login.enterEmailReset')}
               </p>
               <form onSubmit={handleReset} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')}</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
+                      placeholder={t('login.emailPlaceholder')}
                       required
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
@@ -329,15 +337,15 @@ export default function Login() {
                   {isLoading ? (
                     <span className="flex items-center justify-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Sending...
+                      {t('login.sending')}
                     </span>
                   ) : resetSent ? (
                     <span className="flex items-center justify-center gap-2">
                       <CheckCircle className="w-4 h-4" />
-                      Sent!
+                      {t('common.sent')}
                     </span>
                   ) : (
-                    'Send Reset Link'
+                    t('login.sendResetLink')
                   )}
                 </button>
               </form>
@@ -347,7 +355,7 @@ export default function Login() {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-6">
-          Blaze Skate Journal v1.0.0
+          {t('login.brand')} v1.5.0
         </p>
       </div>
     </div>

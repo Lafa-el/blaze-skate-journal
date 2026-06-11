@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { aggregateCampStats } from '../services/summerCampService'
 import { useAuth } from '../contexts/AuthContext'
+import { useLanguage } from '../i18n'
 
 function formatTime(totalSeconds) {
   if (!totalSeconds || totalSeconds === '--') return '--'
@@ -37,6 +38,7 @@ function loadSavedDates() {
 
 export default function SummerCamp() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [campData, setCampData] = useState(null)
@@ -71,7 +73,7 @@ export default function SummerCamp() {
       const stats = await aggregateCampStats(campStart, campEnd, user.uid)
       setCampData(stats)
     } catch (e) {
-      setError('Failed to load camp stats. Check your connection or Firebase config.')
+      setError(t('summerCamp.failedLoad'))
       console.error('[SummerCamp] Failed to load:', e)
     } finally {
       setLoading(false)
@@ -88,7 +90,7 @@ export default function SummerCamp() {
     <div className="p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Summer Camp 2026</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('summerCamp.title')}</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           {campStart && campEnd ? `${formatDate(campStart)} — ${formatDate(campEnd)}` : ''}
         </p>
@@ -106,8 +108,8 @@ export default function SummerCamp() {
         <div className="flex items-center gap-3 mb-4">
           <Tent className="w-6 h-6" />
           <div>
-            <h2 className="text-lg font-bold">Summer Skate Camp 2026</h2>
-            <p className="text-sm text-indigo-200">Track your camp progress</p>
+            <h2 className="text-lg font-bold">{t('summerCamp.campBanner')}</h2>
+            <p className="text-sm text-indigo-200">{t('summerCamp.trackProgress')}</p>
           </div>
         </div>
 
@@ -120,7 +122,7 @@ export default function SummerCamp() {
                 onChange={(e) => setTempStart(e.target.value)}
                 className="flex-1 px-3 py-2 rounded-lg bg-white/20 text-white text-sm border border-white/30 placeholder-white/60"
               />
-              <span className="text-white/70">to</span>
+              <span className="text-white/70">{t('summerCamp.to')}</span>
               <input
                 type="date"
                 value={tempEnd}
@@ -131,7 +133,7 @@ export default function SummerCamp() {
                 onClick={handleSaveDates}
                 className="px-3 py-2 bg-white text-indigo-600 rounded-lg text-sm font-medium"
               >
-                Save
+                {t('common.save')}
               </button>
               <button
                 onClick={() => {
@@ -141,7 +143,7 @@ export default function SummerCamp() {
                 }}
                 className="px-3 py-2 bg-white/20 text-white rounded-lg text-sm"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           ) : (
@@ -154,7 +156,7 @@ export default function SummerCamp() {
               className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors"
             >
               <Calendar className="w-4 h-4" />
-              {campStart && campEnd ? `${formatDate(campStart)} — ${formatDate(campEnd)}` : 'Set date range'}
+              {campStart && campEnd ? `${formatDate(campStart)} — ${formatDate(campEnd)}` : t('summerCamp.subtitle')}
             </button>
           )}
         </div>
@@ -163,9 +165,9 @@ export default function SummerCamp() {
         {campStart && campEnd && (
           <div className="bg-white/10 rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-indigo-200">Camp Progress</span>
+              <span className="text-xs text-indigo-200">{t('summerCamp.campProgress')}</span>
               <span className="text-xs font-medium">
-                {campData ? `${campData.daysTrained} training days` : 'Loading...'}
+                {campData ? `${campData.daysTrained} ${t('summerCamp.trainingDays')}` : t('common.loading')}
               </span>
             </div>
             <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
@@ -179,8 +181,8 @@ export default function SummerCamp() {
               )}
             </div>
             <div className="flex justify-between mt-1">
-              <span className="text-[10px] text-indigo-200">Day 1</span>
-              <span className="text-[10px] text-indigo-200">Day {campData?.totalCampDays || 0}</span>
+              <span className="text-[10px] text-indigo-200">{t('summerCamp.day')} 1</span>
+              <span className="text-[10px] text-indigo-200">{t('summerCamp.day')} {campData?.totalCampDays || 0}</span>
             </div>
           </div>
         )}
@@ -190,7 +192,7 @@ export default function SummerCamp() {
       {loading && (
         <div className="text-center py-8 text-gray-400">
           <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
-          <p className="text-sm">Loading camp stats...</p>
+          <p className="text-sm">{t('summerCamp.loading')}</p>
         </div>
       )}
 
@@ -201,26 +203,26 @@ export default function SummerCamp() {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <Target className="w-4 h-4 text-indigo-500" />
-                <span className="text-[10px] text-gray-500 font-medium uppercase">Ice</span>
+                <span className="text-[10px] text-gray-500 font-medium uppercase">{t('summerCamp.ice')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{campData.iceSessions}</p>
-              <p className="text-[10px] text-gray-400">{campData.daysWithRecords} days with records</p>
+              <p className="text-[10px] text-gray-400">{campData.daysWithRecords} {t('summerCamp.withRecords')}</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <Dumbbell className="w-4 h-4 text-emerald-500" />
-                <span className="text-[10px] text-gray-500 font-medium uppercase">Dryland</span>
+                <span className="text-[10px] text-gray-500 font-medium uppercase">{t('summerCamp.dryland')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{campData.drylandSessions}</p>
-              <p className="text-[10px] text-gray-400">{campData.daysTrained} days trained</p>
+              <p className="text-[10px] text-gray-400">{campData.daysTrained} {t('summerCamp.daysTrained')}</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <Users className="w-4 h-4 text-amber-500" />
-                <span className="text-[10px] text-gray-500 font-medium uppercase">Private</span>
+                <span className="text-[10px] text-gray-500 font-medium uppercase">{t('summerCamp.private')}</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{campData.privateLessons}</p>
-              <p className="text-[10px] text-gray-400">lessons</p>
+              <p className="text-[10px] text-gray-400">{t('summerCamp.lessons')}</p>
             </div>
           </div>
 
@@ -228,7 +230,7 @@ export default function SummerCamp() {
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 mb-1">
               <Clock className="w-4 h-4 text-violet-500" />
-              <span className="text-sm text-gray-500">Total Training Minutes</span>
+              <span className="text-sm text-gray-500">{t('summerCamp.totalMinutes')}</span>
             </div>
             <p className="text-3xl font-bold text-gray-900">
               {campData.totalTrainingMinutes.toLocaleString()}
@@ -240,7 +242,7 @@ export default function SummerCamp() {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-3">
                 <Trophy className="w-4 h-4 text-amber-500" />
-                <h2 className="font-semibold text-gray-900">PB Changes</h2>
+                <h2 className="font-semibold text-gray-900">{t('summerCamp.pbChanges')}</h2>
               </div>
               <div className="space-y-2">
                 {campData.pbChanges.map((pb, i) => (
@@ -254,7 +256,7 @@ export default function SummerCamp() {
                       <span className="text-sm font-medium text-gray-900">{pb.event}</span>
                       {pb.changed && (
                         <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
-                          NEW PB
+                          {t('summerCamp.newPb')}
                         </span>
                       )}
                     </div>
@@ -276,7 +278,7 @@ export default function SummerCamp() {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-3">
                 <Flame className="w-4 h-4 text-red-500" />
-                <h2 className="font-semibold text-gray-900">High-Frequency Technical Issues</h2>
+                <h2 className="font-semibold text-gray-900">{t('summerCamp.highFreqIssues')}</h2>
               </div>
               <div className="flex flex-wrap gap-2">
                 {campData.highFreqTechIssues.map((item) => (
@@ -296,7 +298,7 @@ export default function SummerCamp() {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center gap-2 mb-3">
                 <Star className="w-4 h-4 text-yellow-500" />
-                <h2 className="font-semibold text-gray-900">Milestones</h2>
+                <h2 className="font-semibold text-gray-900">{t('summerCamp.milestones')}</h2>
               </div>
               <div className="space-y-3">
                 {campData.campMilestones.map((milestone) => (
@@ -311,7 +313,7 @@ export default function SummerCamp() {
                         </>
                       )}
                     </div>
-                    <p className="text-sm font-medium text-gray-900">{milestone.data.title || milestone.data.name || milestone.data.description || 'Untitled Milestone'}</p>
+                    <p className="text-sm font-medium text-gray-900">{milestone.data.title || milestone.data.name || milestone.data.description || t('common.untitled')}</p>
                     {milestone.data.description && milestone.data.title && (
                       <p className="text-xs text-gray-500 mt-0.5">{milestone.data.description}</p>
                     )}
@@ -326,8 +328,8 @@ export default function SummerCamp() {
            !campData.pbChanges.length && !campData.highFreqTechIssues.length && !campData.campMilestones.length && (
             <div className="text-center py-8 text-gray-400">
               <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No camp data for this period yet</p>
-              <p className="text-xs text-gray-300 mt-1">Start logging sessions to see stats here</p>
+              <p className="text-sm">{t('summerCamp.noCampData')}</p>
+              <p className="text-xs text-gray-300 mt-1">{t('summerCamp.startLogging')}</p>
             </div>
           )}
         </>

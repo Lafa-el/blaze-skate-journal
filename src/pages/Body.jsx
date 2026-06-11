@@ -2,23 +2,26 @@ import { useState, useEffect } from 'react'
 import { HeartPulse, Moon, Droplet, Scale, Ruler, AlertTriangle, Smile, Trash2, ChevronLeft } from 'lucide-react'
 import { bodyStatusService } from '../services/bodyStatusService'
 import { useAuth } from '../contexts/AuthContext'
+import { useLanguage } from '../i18n'
 
 const moodOptions = [
-  { value: 1, label: '😫', desc: 'Terrible' },
-  { value: 2, label: '😕', desc: 'Poor' },
-  { value: 3, label: '😐', desc: 'Okay' },
-  { value: 4, label: '😊', desc: 'Good' },
-  { value: 5, label: '😄', desc: 'Great' },
-  { value: 6, label: '🔥', desc: 'Excellent' },
+  { value: 1, label: '😫', descKey: 'body.moodOptions.terrible' },
+  { value: 2, label: '😕', descKey: 'body.moodOptions.poor' },
+  { value: 3, label: '😐', descKey: 'body.moodOptions.okay' },
+  { value: 4, label: '😊', descKey: 'body.moodOptions.good' },
+  { value: 5, label: '😄', descKey: 'body.moodOptions.great' },
+  { value: 6, label: '🔥', descKey: 'body.moodOptions.excellent' },
 ]
 
 const sorenessAreas = [
-  'quadriceps', 'hamstrings', 'calves', 'lower_back',
-  'shoulders', 'knees', 'ankles', 'hips', 'glutes', 'core',
+  { key: 'quadriceps' }, { key: 'hamstrings' }, { key: 'calves' }, { key: 'lower_back' },
+  { key: 'shoulders' }, { key: 'knees' }, { key: 'ankles' }, { key: 'hips' },
+  { key: 'glutes' }, { key: 'core' },
 ]
 
 export default function Body() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [readings, setReadings] = useState([])
@@ -50,7 +53,7 @@ export default function Body() {
       const all = await bodyStatusService.list(user.uid, 7)
       setReadings(all)
     } catch (e) {
-      setError('Failed to load body readings. Check your connection or Firebase config.')
+      setError(t('body.failedLoad'))
       console.error('[Body] Failed to load:', e)
     }
   }
@@ -136,8 +139,8 @@ export default function Body() {
     <div className="p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Body Status</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Track your daily physical condition</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('body.title')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('body.subtitle')}</p>
       </div>
 
       {/* Error Banner */}
@@ -150,7 +153,7 @@ export default function Body() {
       {/* Recent Readings */}
       {readings.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Recent Readings</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('body.recentReadings')}</h2>
           <div className="space-y-3">
             {readings.map((reading) => {
               const r = reading.data
@@ -162,7 +165,7 @@ export default function Body() {
                       <div>
                         <p className="font-medium text-gray-900">{r.date}</p>
                         <p className="text-xs text-gray-400">
-                          {r.sleepHours}h sleep · Fatigue {r.fatigueLevel}/5
+                          {r.sleepHours}h {t('body.sleep')} · Fatigue {r.fatigueLevel}/{t('common.score')}
                         </p>
                       </div>
                     </div>
@@ -170,14 +173,14 @@ export default function Body() {
                       <button
                         onClick={() => startEdit(reading)}
                         className="p-1.5 rounded-lg hover:bg-gray-100"
-                        title="Edit"
+                        title={t('common.edit')}
                       >
                         <ChevronLeft className="w-4 h-4 text-gray-400 rotate-180" />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(reading.docId)}
                         className="p-1.5 rounded-lg hover:bg-red-50"
-                        title="Delete"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="w-4 h-4 text-red-400" />
                       </button>
@@ -226,20 +229,20 @@ export default function Body() {
       {showForm ? (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
           <h3 className="font-semibold text-gray-900">
-            {editId ? 'Edit Body Status' : 'Log Body Status'}
+            {editId ? t('body.editBody') : t('body.logBody')}
           </h3>
 
           {/* Sleep Hours */}
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block flex items-center gap-1.5">
               <Moon className="w-3.5 h-3.5" />
-              Sleep (hours)
+              {t('body.sleep')}
             </label>
             <input
               type="number"
               value={form.sleepHours}
               onChange={(e) => updateField('sleepHours', e.target.value)}
-              placeholder="e.g. 7.5"
+              placeholder={t('body.sleepPlaceholder')}
               step="0.5"
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
@@ -247,7 +250,7 @@ export default function Body() {
 
           {/* Fatigue Level */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Fatigue Level (1–5)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('body.fatigue')}</label>
             <div className="flex gap-1.5">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
@@ -263,12 +266,12 @@ export default function Body() {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-400 mt-1">1 = Fresh, 5 = Exhausted</p>
+            <p className="text-xs text-gray-400 mt-1">{t('body.fatigueScale')}</p>
           </div>
 
           {/* Mood */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Mood</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('body.mood')}</label>
             <div className="flex gap-1.5">
               {moodOptions.map((m) => (
                 <button
@@ -279,7 +282,7 @@ export default function Body() {
                       ? 'border-indigo-500 bg-indigo-50'
                       : 'border-gray-200 hover:bg-gray-50'
                   }`}
-                  title={m.desc}
+                  title={t(m.descKey)}
                 >
                   {m.label}
                 </button>
@@ -289,19 +292,19 @@ export default function Body() {
 
           {/* Soreness Areas */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Soreness Areas</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('body.sorenessAreas')}</label>
             <div className="flex flex-wrap gap-1.5">
               {sorenessAreas.map((area) => (
                 <button
-                  key={area}
-                  onClick={() => toggleSorenessArea(area)}
+                  key={area.key}
+                  onClick={() => toggleSorenessArea(area.key)}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                    form.sorenessAreas.includes(area)
+                    form.sorenessAreas.includes(area.key)
                       ? 'bg-red-100 text-red-700'
                       : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                   }`}
                 >
-                  {area.replace(/_/g, ' ')}
+                  {area.key.replace(/_/g, ' ')}
                 </button>
               ))}
             </div>
@@ -312,13 +315,13 @@ export default function Body() {
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block flex items-center gap-1.5">
                 <Scale className="w-3.5 h-3.5" />
-                Weight (lb)
+                {t('body.weight')}
               </label>
               <input
                 type="number"
                 value={form.bodyWeightLb}
                 onChange={(e) => updateField('bodyWeightLb', e.target.value)}
-                placeholder="e.g. 128"
+                placeholder={t('body.weightPlaceholder')}
                 step="0.1"
                 className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
               />
@@ -326,13 +329,13 @@ export default function Body() {
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block flex items-center gap-1.5">
                 <Ruler className="w-3.5 h-3.5" />
-                Height (cm)
+                {t('body.height')}
               </label>
               <input
                 type="number"
                 value={form.heightCm}
                 onChange={(e) => updateField('heightCm', e.target.value)}
-                placeholder="e.g. 160"
+                placeholder={t('body.heightPlaceholder')}
                 className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
               />
             </div>
@@ -342,12 +345,12 @@ export default function Body() {
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5" />
-              Injury / Pain Note (optional)
+              {t('body.injuryNote')}
             </label>
             <textarea
               value={form.injuryNote}
               onChange={(e) => updateField('injuryNote', e.target.value)}
-              placeholder="Any pain, discomfort, or injury to note?"
+              placeholder={t('body.injuryPlaceholder')}
               rows={3}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
             />
@@ -360,13 +363,13 @@ export default function Body() {
               disabled={loading}
               className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
             >
-              {loading ? 'Saving...' : editId ? 'Update' : 'Save Body Status'}
+              {loading ? t('common.saving') : editId ? t('common.update') : t('body.saveBody')}
             </button>
             <button
               onClick={resetForm}
               className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -376,7 +379,7 @@ export default function Body() {
           className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           <HeartPulse className="w-5 h-5" />
-          Log Body Status
+          {t('body.logBody')}
         </button>
       )}
 
@@ -384,7 +387,7 @@ export default function Body() {
       {readings.length === 0 && !showForm && (
         <div className="text-center py-8 text-gray-400">
           <Smile className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No body status logged yet</p>
+          <p className="text-sm">{t('body.noBodyStatus')}</p>
         </div>
       )}
 
@@ -392,20 +395,20 @@ export default function Body() {
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold text-gray-900 mb-2">Delete Reading?</h3>
-            <p className="text-sm text-gray-600 mb-4">This action cannot be undone.</p>
+            <h3 className="font-semibold text-gray-900 mb-2">{t('body.deleteReading')}</h3>
+            <p className="text-sm text-gray-600 mb-4">{t('body.deleteReadingConfirm')}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => handleDelete(deleteConfirm)}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-lg"
               >
-                Delete
+                {t('common.delete')}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 rounded-lg"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { LanguageProvider } from './i18n'
 import { useAuth } from './contexts/AuthContext'
 import Dashboard from './pages/Dashboard'
 import Daily from './pages/Daily'
@@ -52,8 +53,9 @@ export default function App() {
   }
 
   return (
-    <>
-      <Routes>
+    <LanguageProvider>
+      <>
+        <Routes>
         {/* Public routes */}
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" replace />} />
 
@@ -78,6 +80,7 @@ export default function App() {
 
       {/* Show BottomNav only for protected routes (not login page) */}
       {user && <BottomNav />}
-    </>
+      </>
+    </LanguageProvider>
   )
 }
