@@ -4,12 +4,29 @@ import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../i18n'
 
+function useSystemColorScheme() {
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
+
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = (e) => setIsDark(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
+
+  return isDark
+}
+
 /* eslint-disable react-hooks/set-state-in-effect */
 export default function Login() {
   const { signInWithEmail, signUpWithEmail, resetPasswordEmail, isLoading, signInError, signUpError, resetError } = useAuth()
   const navigate = useNavigate()
   const { t } = useLanguage()
 
+  const isDark = useSystemColorScheme()
   const [mode, setMode] = useState('login') // 'login', 'register', 'reset'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -106,7 +123,11 @@ export default function Login() {
   const renderError = (error) => {
     if (!error) return null
     return (
-      <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+      <div className={`flex items-center gap-2 p-3 rounded-lg text-sm transition-colors duration-300 ${
+        isDark
+          ? 'bg-red-900/30 border border-red-800 text-red-300'
+          : 'bg-red-50 border border-red-200 text-red-700'
+      }`}>
         <AlertCircle className="w-4 h-4 shrink-0" />
         <span>{error}</span>
       </div>
@@ -114,27 +135,47 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex flex-col justify-center px-6 py-12">
-      <div className="w-full max-w-sm mx-auto">
+    <div className={`min-h-[100dvh] flex flex-col items-center justify-center px-6 py-12 transition-colors duration-300 ${
+      isDark
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+        : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'
+    }`}>
+      <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-4">
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 transition-colors duration-300 ${
+            isDark
+              ? 'bg-gradient-to-br from-indigo-600 to-purple-700'
+              : 'bg-gradient-to-br from-indigo-400 to-purple-500'
+          }`}>
             <Flame className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('login.brand')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('login.tagline')}</p>
+          <h1 className={`text-2xl font-bold transition-colors duration-300 ${
+            isDark ? 'text-gray-100' : 'text-gray-900'
+          }`}>{t('login.brand')}</h1>
+          <p className={`text-sm mt-1 transition-colors duration-300 ${
+            isDark ? 'text-gray-400' : 'text-gray-500'
+          }`}>{t('login.tagline')}</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+        <div className={`rounded-2xl shadow-lg border transition-colors duration-300 ${
+          isDark
+            ? 'bg-gray-800 border-gray-700'
+            : 'bg-white border-gray-100'
+        }`}>
           {/* Mode Tabs */}
           <div className="flex gap-2 mb-6">
             <button
               onClick={() => setMode('login')}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
                 mode === 'login'
-                  ? 'bg-indigo-50 text-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? isDark
+                    ? 'bg-indigo-900/50 text-indigo-300'
+                    : 'bg-indigo-50 text-indigo-600'
+                  : isDark
+                    ? 'text-gray-400 hover:text-gray-200'
+                    : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {t('login.signIn')}
@@ -143,8 +184,12 @@ export default function Login() {
               onClick={() => setMode('register')}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
                 mode === 'register'
-                  ? 'bg-indigo-50 text-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? isDark
+                    ? 'bg-indigo-900/50 text-indigo-300'
+                    : 'bg-indigo-50 text-indigo-600'
+                  : isDark
+                    ? 'text-gray-400 hover:text-gray-200'
+                    : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {t('login.createAccount')}
@@ -153,8 +198,12 @@ export default function Login() {
               onClick={() => setMode('reset')}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
                 mode === 'reset'
-                  ? 'bg-indigo-50 text-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? isDark
+                    ? 'bg-indigo-900/50 text-indigo-300'
+                    : 'bg-indigo-50 text-indigo-600'
+                  : isDark
+                    ? 'text-gray-400 hover:text-gray-200'
+                    : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {t('login.forgotPassword')}
@@ -166,7 +215,11 @@ export default function Login() {
 
           {/* Reset Success */}
           {resetSent && (
-            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm mb-4">
+            <div className={`flex items-center gap-2 p-3 rounded-lg text-sm mb-4 transition-colors duration-300 ${
+              isDark
+                ? 'bg-green-900/30 border border-green-800 text-green-300'
+                : 'bg-green-50 border border-green-200 text-green-700'
+            }`}>
               <CheckCircle className="w-4 h-4 shrink-0" />
               <span>{t('login.resetSent')}</span>
             </div>
@@ -176,7 +229,9 @@ export default function Login() {
           {mode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')}</label>
+                <label className={`block text-sm font-medium mb-1 transition-colors duration-300 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>{t('login.email')}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -185,13 +240,19 @@ export default function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('login.emailPlaceholder')}
                     required
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300 ${
+                      isDark
+                        ? 'bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400'
+                        : 'border border-gray-300 text-gray-900 placeholder-gray-400'
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')}</label>
+                <label className={`block text-sm font-medium mb-1 transition-colors duration-300 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>{t('login.password')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -200,12 +261,18 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('login.passwordPlaceholder')}
                     required
-                    className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className={`w-full pl-10 pr-10 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300 ${
+                      isDark
+                        ? 'bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400'
+                        : 'border border-gray-300 text-gray-900 placeholder-gray-400'
+                    }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm hover:transition-colors ${
+                      isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                    }`}
                   >
                     {showPassword ? t('login.hide') : t('login.show')}
                   </button>
@@ -232,7 +299,9 @@ export default function Login() {
           {mode === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.name')}</label>
+                <label className={`block text-sm font-medium mb-1 transition-colors duration-300 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>{t('login.name')}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -241,13 +310,19 @@ export default function Login() {
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder={t('login.namePlaceholder')}
                     required
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300 ${
+                      isDark
+                        ? 'bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400'
+                        : 'border border-gray-300 text-gray-900 placeholder-gray-400'
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')}</label>
+                <label className={`block text-sm font-medium mb-1 transition-colors duration-300 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>{t('login.email')}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -256,13 +331,19 @@ export default function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('login.emailPlaceholder')}
                     required
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300 ${
+                      isDark
+                        ? 'bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400'
+                        : 'border border-gray-300 text-gray-900 placeholder-gray-400'
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')}</label>
+                <label className={`block text-sm font-medium mb-1 transition-colors duration-300 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>{t('login.password')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -271,13 +352,19 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('login.passwordMinLength')}
                     required
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300 ${
+                      isDark
+                        ? 'bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400'
+                        : 'border border-gray-300 text-gray-900 placeholder-gray-400'
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.confirmPassword')}</label>
+                <label className={`block text-sm font-medium mb-1 transition-colors duration-300 ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>{t('login.confirmPassword')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -286,7 +373,11 @@ export default function Login() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder={t('login.passwordPlaceholder')}
                     required
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300 ${
+                      isDark
+                        ? 'bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400'
+                        : 'border border-gray-300 text-gray-900 placeholder-gray-400'
+                    }`}
                   />
                 </div>
               </div>
@@ -310,12 +401,16 @@ export default function Login() {
 
           {mode === 'reset' && (
             <div>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className={`text-sm mb-4 transition-colors duration-300 ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>
                 {t('login.enterEmailReset')}
               </p>
               <form onSubmit={handleReset} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')}</label>
+                  <label className={`block text-sm font-medium mb-1 transition-colors duration-300 ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>{t('login.email')}</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
@@ -324,7 +419,11 @@ export default function Login() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder={t('login.emailPlaceholder')}
                       required
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-300 ${
+                        isDark
+                          ? 'bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400'
+                          : 'border border-gray-300 text-gray-900 placeholder-gray-400'
+                      }`}
                     />
                   </div>
                 </div>
@@ -354,7 +453,9 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className={`text-center text-xs mt-6 transition-colors duration-300 ${
+          isDark ? 'text-gray-500' : 'text-gray-400'
+        }`}>
           {t('login.brand')} v1.5.0
         </p>
       </div>

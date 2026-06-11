@@ -167,40 +167,40 @@ export default function Settings() {
     <div className="p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{t('settings.subtitle')}</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('settings.title')}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('settings.subtitle')}</p>
       </div>
 
       {/* Settings Groups */}
       {settingsGroups.map((group, gi) => (
         <div key={gi}>
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">{t(group.titleKey)}</h3>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-1">{t(group.titleKey)}</h3>
+          <div className="settings-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 divide-y divide-gray-100 dark:divide-slate-700">
             {group.items.map((item, ii) => {
               if (item.type === 'notifications') {
                 return (
                   <div key={ii} className="relative">
                     <div
                       onClick={() => setShowNotifPicker(!showNotifPicker)}
-                      className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors`}
+                      className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors`}
                       data-notif-row
                     >
-                      <item.icon className="w-5 h-5 text-gray-400" />
+                      <item.icon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{t(item.labelKey)}</p>
-                        <p className="text-xs text-gray-400">{getNotifSummary(notifications, t)}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t(item.labelKey)}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{getNotifSummary(notifications, t)}</p>
                       </div>
-                      <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showNotifPicker ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${showNotifPicker ? 'rotate-90' : ''}`} />
                     </div>
 
                     {/* Dropdown panel */}
                     {showNotifPicker && (
-                      <div className="bg-gray-50 border-t border-gray-100 p-4" data-notif-panel>
+                      <div className="bg-gray-50 dark:bg-slate-700 border-t border-gray-100 dark:border-slate-600 p-4" data-notif-panel>
                         {/* Global toggle */}
                         <div className="flex items-center justify-between py-2 mb-3">
                           <div className="flex items-center gap-2">
-                            <Bell className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm font-medium text-gray-700">{t('settings.notifications')}</span>
+                            <Bell className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('settings.notifications')}</span>
                           </div>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleToggleNotif('__global__') }}
@@ -221,8 +221,8 @@ export default function Settings() {
                               <div className="flex items-center gap-2 mr-3">
                                 <span className="text-base">{type.icon}</span>
                                 <div>
-                                  <p className="text-sm text-gray-700">{t(type.labelKey)}</p>
-                                  <p className="text-xs text-gray-400">{t(type.descKey)}</p>
+                                  <p className="text-sm text-gray-700 dark:text-gray-200">{t(type.labelKey)}</p>
+                                  <p className="text-xs text-gray-400 dark:text-gray-500">{t(type.descKey)}</p>
                                 </div>
                               </div>
                               <button
@@ -251,20 +251,20 @@ export default function Settings() {
                   <div key={ii} className="relative">
                     <div
                       onClick={() => setShowAppearancePicker(!showAppearancePicker)}
-                      className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                       data-appearance-row
                     >
-                      <item.icon className="w-5 h-5 text-gray-400" />
+                      <item.icon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{t(item.labelKey)}</p>
-                        <p className="text-xs text-gray-400">{t(`settings.appearanceModes.${theme}`)} mode</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t(item.labelKey)}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{t(`settings.appearanceModes.${theme}`)} mode</p>
                       </div>
-                      <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showAppearancePicker ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${showAppearancePicker ? 'rotate-90' : ''}`} />
                     </div>
 
                     {/* Dropdown panel */}
                     {showAppearancePicker && (
-                      <div className="bg-gray-50 border-t border-gray-100 p-4" data-appearance-panel>
+                      <div className="bg-gray-50 dark:bg-slate-700 border-t border-gray-100 dark:border-slate-600 p-4" data-appearance-panel>
                         <div className="space-y-2">
                           {(['auto', 'light', 'dark']).map((mode) => (
                             <button
@@ -273,13 +273,13 @@ export default function Settings() {
                               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                                 theme === mode
                                   ? 'bg-primary/10 text-primary font-medium'
-                                  : 'text-gray-700 hover:bg-gray-100'
+                                  : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700'
                               }`}
                             >
                               <span className="text-base">{mode === 'auto' ? '🔄' : mode === 'light' ? '☀️' : '🌙'}</span>
                               <div className="flex-1 text-left">
                                 <p className="text-sm">{t(`settings.appearanceModes.${mode}`)}</p>
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-gray-400 dark:text-gray-500">
                                   {t(`settings.appearanceModes.${mode}Desc`)}
                                 </p>
                               </div>
@@ -298,20 +298,20 @@ export default function Settings() {
                   <div key={ii} className="relative">
                     <div
                       onClick={() => setShowLangPicker(!showLangPicker)}
-                      className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                       data-lang-row
                     >
-                      <item.icon className="w-5 h-5 text-gray-400" />
+                      <item.icon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{t(item.labelKey)}</p>
-                        <p className="text-xs text-gray-400">{LANGUAGE_LABELS[lang]}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t(item.labelKey)}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{LANGUAGE_LABELS[lang]}</p>
                       </div>
-                      <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showLangPicker ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${showLangPicker ? 'rotate-90' : ''}`} />
                     </div>
 
                     {/* Dropdown panel */}
                     {showLangPicker && (
-                      <div className="bg-gray-50 border-t border-gray-100 p-4" data-lang-panel>
+                      <div className="bg-gray-50 dark:bg-slate-700 border-t border-gray-100 dark:border-slate-600 p-4" data-lang-panel>
                         <div className="space-y-2">
                           {(['en', 'zh']).map((l) => (
                             <button
@@ -320,7 +320,7 @@ export default function Settings() {
                               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                                 lang === l
                                   ? 'bg-primary/10 text-primary font-medium'
-                                  : 'text-gray-700 hover:bg-gray-100'
+                                  : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700'
                               }`}
                             >
                               <span className="text-base">{l === 'en' ? '🇺🇸' : '🇨🇳'}</span>
@@ -345,17 +345,17 @@ export default function Settings() {
                     if (item.labelKey === 'settings.signOut') setShowConfirm(true)
                     if (item.labelKey === 'settings.exportData') handleExportData()
                   }}
-                  className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors ${item.danger ? '' : ''}`}
+                  className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${item.danger ? '' : ''}`}
                 >
-                  <item.icon className={`w-5 h-5 ${item.danger ? 'text-red-500' : 'text-gray-400'}`} />
+                  <item.icon className={`w-5 h-5 ${item.danger ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'}`} />
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${item.danger ? 'text-red-600' : 'text-gray-900'}`}>
+                    <p className={`text-sm font-medium ${item.danger ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}`}>
                       {t(item.labelKey)}
                     </p>
-                    <p className="text-xs text-gray-400">{item.descKey ? t(item.descKey) : item.desc}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{item.descKey ? t(item.descKey) : item.desc}</p>
                   </div>
                   {item.labelKey !== 'settings.signOut' && (
-                    <ChevronRight className="w-4 h-4 text-gray-300" />
+                    <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
                   )}
                 </div>
               )
@@ -366,16 +366,16 @@ export default function Settings() {
 
       {/* App Version */}
       <div className="text-center pt-4">
-        <p className="text-xs text-gray-400">{t('settings.appVersion')}</p>
-        <p className="text-xs text-gray-300 mt-1">{t('settings.appBuilt')}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{t('settings.appVersion')}</p>
+        <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">{t('settings.appBuilt')}</p>
       </div>
 
       {/* Sign Out Confirmation Dialog */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold text-gray-900 mb-2">{t('settings.signOutConfirm')}</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-sm w-full">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('settings.signOutConfirm')}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               {t('settings.signOutMessage')}
             </p>
             <div className="flex gap-2">
@@ -388,7 +388,7 @@ export default function Settings() {
               </button>
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors"
+                className="flex-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium py-2.5 rounded-lg transition-colors"
               >
                 {t('common.cancel')}
               </button>

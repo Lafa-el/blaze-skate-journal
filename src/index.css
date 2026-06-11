@@ -57,15 +57,22 @@
   }
 
   [data-theme="dark"] #root {
-    background-color: #1e293b;
+    background-color: #0f172a;
+  }
+
+  /* Settings page card styling in dark mode */
+  [data-theme="dark"] .settings-card {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+  }
+
+  /* Dropdown panel background in dark mode */
+  [data-theme="dark"] .bg-gray-50 {
+    background-color: #1a2332 !important;
   }
 
   [data-theme="dark"] .bg-white {
     background-color: #1e293b !important;
-  }
-
-  [data-theme="dark"] .bg-gray-50 {
-    background-color: #334155 !important;
   }
 
   [data-theme="dark"] .bg-gray-100 {
@@ -77,7 +84,7 @@
   }
 
   [data-theme="dark"] .hover\:bg-gray-100:hover {
-    background-color: #475569 !important;
+    background-color: #334155 !important;
   }
 
   [data-theme="dark"] .hover\:bg-gray-200:hover {
