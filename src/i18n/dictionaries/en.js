@@ -423,7 +423,7 @@ export const en = {
     languageDesc: 'English',
     preferences: 'Preferences',
     appearance: 'Appearance',
-    appearanceDesc: 'Light / Dark mode',
+    appearanceDesc: 'Light Mode',
     notifications: 'Notifications',
     data: 'Data',
     exportData: 'Export Data',
@@ -463,12 +463,7 @@ export const en = {
       of: 'of',
     },
     appearanceModes: {
-      auto: 'Auto',
       light: 'Light',
-      dark: 'Dark',
-      autoDesc: 'Follows system settings',
-      lightDesc: 'Always light mode',
-      darkDesc: 'Always dark mode',
     },
     ageCategories: {
       preNovice: 'Pre-Novice',

@@ -138,7 +138,7 @@ export default function EditProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3">
         <div className="flex items-center gap-3">

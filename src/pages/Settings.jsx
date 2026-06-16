@@ -1,21 +1,9 @@
 import { useState, useEffect } from 'react'
 import { User, Bell, Shield, Palette, LogOut, HelpCircle, Database, Globe, ChevronRight } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../i18n'
 import { LANGUAGE_LABELS } from '../i18n/constants'
-
-const THEME_KEY = 'blaze_theme'
-
-function loadTheme() {
-  try {
-    const saved = localStorage.getItem(THEME_KEY)
-    if (saved && ['auto', 'light', 'dark'].includes(saved)) return saved
-  } catch {
-    // ignore
-  }
-  return 'light'
-}
 
 const NOTIFICATIONS_KEY = 'notification_preferences'
 
@@ -73,53 +61,14 @@ export default function Settings() {
   const { user, signOutUser } = useAuth()
   const navigate = useNavigate()
   const { t, lang, setLang } = useLanguage()
-  const [theme, setTheme] = useState(loadTheme)
   const [showConfirm, setShowConfirm] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const [showLevelPicker, setShowLevelPicker] = useState(false)
   const [showLangPicker, setShowLangPicker] = useState(false)
 
-  // Apply theme to document immediately on mount (before React renders)
-  if (theme === 'auto') {
-    document.documentElement.removeAttribute('data-theme')
-  } else {
-    document.documentElement.setAttribute('data-theme', theme)
-  }
-
-  // Update theme when it changes after mount
-  useEffect(() => {
-    if (theme === 'auto') {
-      document.documentElement.removeAttribute('data-theme')
-    } else {
-      document.documentElement.setAttribute('data-theme', theme)
-    }
-  }, [theme])
-
-  // Listen for system color scheme changes when in Auto mode
-  useEffect(() => {
-    if (theme !== 'auto') return
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-
-    const handleChange = (e) => {
-      if (e.matches) {
-        document.documentElement.setAttribute('data-theme', 'dark')
-      } else {
-        document.documentElement.removeAttribute('data-theme')
-      }
-    }
-
-    handleChange(mediaQuery)
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [theme])
-
   // Notifications state
   const [notifications, setNotifications] = useState(loadNotifications)
   const [showNotifPicker, setShowNotifPicker] = useState(false)
-
-  // Appearance state
-  const [showAppearancePicker, setShowAppearancePicker] = useState(false)
 
   const handleAction = (action, path) => {
     if (action === 'navigate') navigate(path)
@@ -130,16 +79,13 @@ export default function Settings() {
       if (showNotifPicker && !e.target.closest('[data-notif-row]') && !e.target.closest('[data-notif-panel]')) {
         setShowNotifPicker(false)
       }
-      if (showAppearancePicker && !e.target.closest('[data-appearance-row]') && !e.target.closest('[data-appearance-panel]')) {
-        setShowAppearancePicker(false)
-      }
       if (showLangPicker && !e.target.closest('[data-lang-row]') && !e.target.closest('[data-lang-panel]')) {
         setShowLangPicker(false)
       }
     }
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
-  }, [showNotifPicker, showAppearancePicker, showLangPicker])
+  }, [showNotifPicker, showLangPicker])
 
   const handleToggleNotif = (type, enabled = null) => {
     setNotifications((prev) => {
@@ -255,47 +201,14 @@ export default function Settings() {
 
               if (item.type === 'appearance') {
                 return (
-                  <div key={ii} className="relative">
-                    <div
-                      onClick={() => setShowAppearancePicker(!showAppearancePicker)}
-                      className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                      data-appearance-row
-                    >
+                  <div key={ii}>
+                    <div className="flex items-center gap-3 p-4">
                       <item.icon className="w-5 h-5 text-gray-400" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900">{t(item.labelKey)}</p>
-                        <p className="text-xs text-gray-400">{t(`settings.appearanceModes.${theme}`)} mode</p>
+                        <p className="text-xs text-gray-500">Light Mode</p>
                       </div>
-                      <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showAppearancePicker ? 'rotate-90' : ''}`} />
                     </div>
-
-                    {/* Dropdown panel */}
-                    {showAppearancePicker && (
-                      <div className="bg-gray-50 border-t border-gray-100 p-4" data-appearance-panel>
-                        <div className="space-y-2">
-                          {(['auto', 'light', 'dark']).map((mode) => (
-                            <button
-                              key={mode}
-                              onClick={(e) => { e.stopPropagation(); setTheme(mode); localStorage.setItem(THEME_KEY, mode) }}
-                              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                                theme === mode
-                                  ? 'bg-primary/10 text-primary font-medium'
-                                  : 'text-gray-700 hover:bg-gray-100'
-                              }`}
-                            >
-                              <span className="text-base">{mode === 'auto' ? '🔄' : mode === 'light' ? '☀️' : '🌙'}</span>
-                              <div className="flex-1 text-left">
-                                <p className="text-sm">{t(`settings.appearanceModes.${mode}`)}</p>
-                                <p className="text-xs text-gray-400">
-                                  {t(`settings.appearanceModes.${mode}Desc`)}
-                                </p>
-                              </div>
-                              <span className="text-sm">{theme === mode ? '✓' : ''}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )
               }
@@ -380,9 +293,9 @@ export default function Settings() {
       {/* Sign Out Confirmation Dialog */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('settings.signOutConfirm')}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full">
+            <h3 className="font-semibold text-gray-900 mb-2">{t('settings.signOutConfirm')}</h3>
+            <p className="text-sm text-gray-600 mb-4">
               {t('settings.signOutMessage')}
             </p>
             <div className="flex gap-2">
@@ -395,7 +308,7 @@ export default function Settings() {
               </button>
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium py-2.5 rounded-lg transition-colors"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors"
               >
                 {t('common.cancel')}
               </button>
@@ -418,7 +331,7 @@ const settingsGroups = [
   {
     titleKey: 'settings.preferences',
     items: [
-      { type: 'appearance', icon: Palette, labelKey: 'settings.appearance', desc: 'Light / Dark mode' },
+      { type: 'appearance', icon: Palette, labelKey: 'settings.appearance', desc: 'Light Mode' },
       { type: 'notifications', icon: Bell, labelKey: 'settings.notifications', desc: getNotifSummaryLabel(defaultNotifications) },
     ],
   },

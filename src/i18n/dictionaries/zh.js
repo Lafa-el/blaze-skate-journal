@@ -409,7 +409,7 @@ export const zh = {
     languageDesc: 'English',
     preferences: '偏好设置',
     appearance: '外观',
-    appearanceDesc: '浅色/深色模式',
+    appearanceDesc: '浅色模式',
     notifications: '通知',
     data: '数据管理',
     exportData: '导出数据',
@@ -449,12 +449,7 @@ export const zh = {
       of: '共',
     },
     appearanceModes: {
-      auto: '自动',
       light: '浅色',
-      dark: '深色',
-      autoDesc: '跟随系统设置',
-      lightDesc: '始终使用浅色模式',
-      darkDesc: '始终使用深色模式',
     },
     ageCategories: {
       preNovice: '初级前',
