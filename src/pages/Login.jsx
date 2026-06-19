@@ -106,19 +106,23 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 py-12 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div
+      className={`h-[100dvh] max-h-[100dvh] flex flex-col items-center justify-center px-6 py-4 sm:py-6 bg-gradient-to-br from-indigo-50 via-white to-purple-50 ${
+        mode === 'register' ? 'overflow-y-auto' : 'overflow-hidden'
+      }`}
+    >
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-4">
-            <Flame className="w-8 h-8 text-white" />
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 mb-3">
+            <Flame className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{t('login.brand')}</h1>
           <p className="text-sm text-gray-500 mt-1">{t('login.tagline')}</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 sm:p-6">
           {/* Mode Tabs */}
           <div className="flex gap-2 mb-6">
             <button
@@ -346,7 +350,7 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-xs text-gray-400 mt-4">
           {t('login.brand')} v1.5.0
         </p>
       </div>

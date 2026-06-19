@@ -55,28 +55,30 @@ export default function App() {
   return (
     <LanguageProvider>
       <>
-        <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" replace />} />
+        <div className={user ? 'pb-[calc(64px+env(safe-area-inset-bottom))]' : undefined}>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" replace />} />
 
-        {/* Protected routes */}
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/daily" element={<ProtectedRoute><Daily /></ProtectedRoute>} />
-        <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-        <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
-        <Route path="/coach-notes" element={<ProtectedRoute><CoachNotes /></ProtectedRoute>} />
-        <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
-        <Route path="/body" element={<ProtectedRoute><Body /></ProtectedRoute>} />
-        <Route path="/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
-        <Route path="/weekly-review" element={<ProtectedRoute><WeeklyReview /></ProtectedRoute>} />
-        <Route path="/summer-camp" element={<ProtectedRoute><SummerCamp /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-<Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-<Route path="/privacy-security" element={<ProtectedRoute><PrivacySecurity /></ProtectedRoute>} />
-<Route path="/help-support" element={<ProtectedRoute><HelpSupport /></ProtectedRoute>} />
-<Route path="/export" element={<ProtectedRoute><Export /></ProtectedRoute>} />
-      </Routes>
+            {/* Protected routes */}
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/daily" element={<ProtectedRoute><Daily /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+            <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
+            <Route path="/coach-notes" element={<ProtectedRoute><CoachNotes /></ProtectedRoute>} />
+            <Route path="/performance" element={<ProtectedRoute><Performance /></ProtectedRoute>} />
+            <Route path="/body" element={<ProtectedRoute><Body /></ProtectedRoute>} />
+            <Route path="/videos" element={<ProtectedRoute><Videos /></ProtectedRoute>} />
+            <Route path="/weekly-review" element={<ProtectedRoute><WeeklyReview /></ProtectedRoute>} />
+            <Route path="/summer-camp" element={<ProtectedRoute><SummerCamp /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+            <Route path="/privacy-security" element={<ProtectedRoute><PrivacySecurity /></ProtectedRoute>} />
+            <Route path="/help-support" element={<ProtectedRoute><HelpSupport /></ProtectedRoute>} />
+            <Route path="/export" element={<ProtectedRoute><Export /></ProtectedRoute>} />
+          </Routes>
+        </div>
 
       {/* Show BottomNav only for protected routes (not login page) */}
       {user && <BottomNav />}
