@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../i18n'
 
-/* eslint-disable react-hooks/set-state-in-effect */
 export default function Login() {
   const { signInWithEmail, signUpWithEmail, resetPasswordEmail, isLoading, signInError, signUpError, resetError } = useAuth()
   const navigate = useNavigate()
@@ -20,20 +19,13 @@ export default function Login() {
 
   // Clear state when switching modes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEmail('')
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPassword('')
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDisplayName('')
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConfirmPassword('')
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowPassword(false)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResetSent(false)
   }, [mode])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const validateEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)

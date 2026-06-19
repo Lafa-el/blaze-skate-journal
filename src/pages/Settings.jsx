@@ -58,12 +58,11 @@ function getNotifSummary(notifState, t) {
 }
 
 export default function Settings() {
-  const { user, signOutUser } = useAuth()
+  const { signOutUser } = useAuth()
   const navigate = useNavigate()
   const { t, lang, setLang } = useLanguage()
   const [showConfirm, setShowConfirm] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
-  const [showLevelPicker, setShowLevelPicker] = useState(false)
   const [showLangPicker, setShowLangPicker] = useState(false)
 
   // Notifications state

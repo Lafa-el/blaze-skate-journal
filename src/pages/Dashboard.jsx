@@ -59,7 +59,6 @@ export default function Dashboard() {
   const { t } = useLanguage()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [birthday, setBirthday] = useState('')
   const [skatingFrom, setSkatingFrom] = useState('')
@@ -167,14 +166,12 @@ export default function Dashboard() {
   }, [user])
 
   const loadSessions = async () => {
-    setError('')
     if (!user) return
     setLoading(true)
     try {
       const all = await sessionService.list(user.uid, 'date')
       setSessions(all)
     } catch (e) {
-      setError(t('dashboard.failedLoad'))
       console.error('[Dashboard] Failed to load:', e)
     } finally {
       setLoading(false)
@@ -213,7 +210,7 @@ export default function Dashboard() {
     return dayNames[d.getDay()]
   }
 
-  const getRelativeDay = (dateStr, dayNames) => {
+  const getRelativeDay = (dateStr) => {
     if (!dateStr) return ''
     const d = new Date(dateStr + 'T00:00:00')
     const today = new Date()

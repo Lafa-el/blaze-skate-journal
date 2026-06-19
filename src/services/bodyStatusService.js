@@ -60,7 +60,7 @@ export const bodyStatusService = {
   /**
    * Update an existing body status reading.
    */
-  async update(docId, data, athleteId = DEFAULT_ATHLETE_ID) {
+  async update(docId, data) {
     const snap = await getDoc(doc(db, COLLECTIONS.BODY_STATUS, docId))
     if (!snap.exists()) return null
 
@@ -74,7 +74,7 @@ export const bodyStatusService = {
   /**
    * Delete a body status reading.
    */
-  async delete(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async delete(docId) {
     const snap = await getDoc(doc(db, COLLECTIONS.BODY_STATUS, docId))
     if (snap.exists()) {
       await deleteDoc(doc(db, COLLECTIONS.BODY_STATUS, docId))

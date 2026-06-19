@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Trophy, Plus, Trash2, ChevronLeft, Target, StopCircle } from 'lucide-react'
+import { Trophy, Plus, Trash2, ChevronLeft, Target } from 'lucide-react'
 import { performanceService } from '../services/performanceService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'

@@ -8,7 +8,7 @@ import { zh } from '../i18n/dictionaries/zh'
 
 export default function PrivacySecurity() {
   const navigate = useNavigate()
-  const { user, isLoading, updatePasswordFn, updateEmailFn, deleteAccountFn } = useAuth()
+  const { user, isLoading, updatePassword, updateEmail, deleteAccount } = useAuth()
   const { t, lang } = useLanguage()
   const deleteConfirmItems = lang === 'zh' ? zh.privacySecurity.deleteConfirmItems : en.privacySecurity.deleteConfirmItems
 
@@ -22,6 +22,7 @@ export default function PrivacySecurity() {
 
   // Email state
   const [newEmail, setNewEmail] = useState('')
+  const [currentEmailPassword, setCurrentEmailPassword] = useState('')
   const [emailSuccess, setEmailSuccess] = useState(false)
   const [emailError, setEmailError] = useState('')
   const [updatingEmail, setUpdatingEmail] = useState(false)
@@ -63,7 +64,7 @@ export default function PrivacySecurity() {
 
     setUpdatingPassword(true)
     try {
-      await updatePasswordFn(currentPassword, newPassword)
+      await updatePassword(currentPassword, newPassword)
       setPasswordSuccess(true)
       setCurrentPassword('')
       setNewPassword('')
@@ -86,12 +87,17 @@ export default function PrivacySecurity() {
       setEmailError(t('privacySecurity.invalidEmail'))
       return
     }
+    if (user?.email && !currentEmailPassword) {
+      setEmailError(t('privacySecurity.currentPasswordRequired'))
+      return
+    }
 
     setUpdatingEmail(true)
     try {
-      await updateEmailFn(newEmail)
+      await updateEmail(newEmail, currentEmailPassword)
       setEmailSuccess(true)
       setNewEmail('')
+      setCurrentEmailPassword('')
       setTimeout(() => setEmailSuccess(false), 3000)
     } catch (err) {
       setEmailError(err.message || t('privacySecurity.failedEmail'))
@@ -112,7 +118,7 @@ export default function PrivacySecurity() {
 
     setIsDeleting(true)
     try {
-      await deleteAccountFn(deletePassword)
+      await deleteAccount(deletePassword)
       navigate('/login')
     } catch (err) {
       setDeleteError(err.message || t('privacySecurity.failedDelete'))
@@ -213,49 +219,60 @@ export default function PrivacySecurity() {
             <ShieldAlert className="w-5 h-5 text-gray-500" />
             <h2 className="font-semibold text-gray-900">{t('privacySecurity.bindEmail')}</h2>
           </div>
-          {user?.email ? (
-            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700">
+          {user?.email && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 mb-3">
               <CheckCircle className="w-4 h-4 shrink-0" />
               <div>
                 <p className="text-sm font-medium">{t('privacySecurity.emailBound')}</p>
                 <p className="text-xs text-green-600">{user.email}</p>
               </div>
             </div>
-          ) : (
-            <form onSubmit={handleUpdateEmail} className="space-y-3">
+          )}
+          <form onSubmit={handleUpdateEmail} className="space-y-3">
+            {user?.email && (
               <div>
-                <label className="text-xs font-medium text-gray-600">{t('privacySecurity.newEmail')}</label>
+                <label className="text-xs font-medium text-gray-600">{t('privacySecurity.currentPassword')}</label>
                 <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder={t('privacySecurity.newEmailPlaceholder')}
+                  type="password"
+                  value={currentEmailPassword}
+                  onChange={(e) => setCurrentEmailPassword(e.target.value)}
+                  placeholder={t('privacySecurity.currentPasswordPlaceholder')}
                   className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
-              {renderError(emailError)}
-              {emailSuccess && (
-                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-                  <CheckCircle className="w-4 h-4 shrink-0" />
-                  <span>{t('privacySecurity.emailUpdated')}</span>
-                </div>
+            )}
+            <div>
+              <label className="text-xs font-medium text-gray-600">{t('privacySecurity.newEmail')}</label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder={t('privacySecurity.newEmailPlaceholder')}
+                className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+            {renderError(emailError)}
+            {emailSuccess && (
+              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                <CheckCircle className="w-4 h-4 shrink-0" />
+                <span>{t('privacySecurity.emailUpdated')}</span>
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={updatingEmail || isLoading}
+              className="w-full bg-primary text-white py-2 rounded-lg text-sm font-medium hover:bg-[#4f46e5] disabled:opacity-50 transition-colors"
+            >
+              {updatingEmail ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t('privacySecurity.updatingEmail')}
+                </span>
+              ) : (
+                t('privacySecurity.bindEmailBtn')
               )}
-              <button
-                type="submit"
-                disabled={updatingEmail || isLoading}
-                className="w-full bg-primary text-white py-2 rounded-lg text-sm font-medium hover:bg-[#4f46e5] disabled:opacity-50 transition-colors"
-              >
-                {updatingEmail ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {t('privacySecurity.updatingEmail')}
-                  </span>
-                ) : (
-                  t('privacySecurity.bindEmailBtn')
-                )}
-              </button>
-            </form>
-          )}
+            </button>
+          </form>
         </div>
 
         {/* Delete Account */}
@@ -293,7 +310,7 @@ export default function PrivacySecurity() {
                 </ul>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => { setDeleteStep(2); setShowDeleteConfirm(false) }}
+                    onClick={() => setDeleteStep(2)}
                     className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2.5 rounded-lg transition-colors"
                   >
                     {t('privacySecurity.deleteConfirmUnderstand')}

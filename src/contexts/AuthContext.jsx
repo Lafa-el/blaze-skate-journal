@@ -42,6 +42,8 @@ export function AuthProvider({ children }) {
     return () => unsubscribe()
   }, [])
 
+  const makeHandledError = (message, cause) => new Error(message, { cause })
+
   const signInWithEmailFn = async (email, password) => {
     setIsLoading(true)
     setSignInError(null)
@@ -61,7 +63,7 @@ export function AuthProvider({ children }) {
         message = e.message
       }
       setSignInError(message)
-      throw new Error(message)
+      throw makeHandledError(message, e)
     } finally {
       setIsLoading(false)
     }
@@ -85,7 +87,7 @@ export function AuthProvider({ children }) {
         message = e.message
       }
       setSignUpError(message)
-      throw new Error(message)
+      throw makeHandledError(message, e)
     } finally {
       setIsLoading(false)
     }
@@ -106,7 +108,7 @@ export function AuthProvider({ children }) {
         message = e.message
       }
       setResetError(message)
-      throw new Error(message)
+      throw makeHandledError(message, e)
     } finally {
       setIsLoading(false)
     }
@@ -154,21 +156,23 @@ export function AuthProvider({ children }) {
         message = e.message
       }
       setPasswordError(message)
-      throw new Error(message)
+      throw makeHandledError(message, e)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const updateEmailFn = async (newEmail) => {
+  const updateEmailFn = async (newEmail, currentPassword = '') => {
     setIsLoading(true)
     setEmailError(null)
     try {
       const user = auth.currentUser
-      if (!user || !user.email) throw new Error('No email found for current user')
-      
-      const credential = EmailAuthProvider.credential(user.email, newEmail)
-      await reauthenticateWithCredential(user, credential)
+      if (!user) throw new Error('No current user')
+
+      if (user.email && currentPassword) {
+        const credential = EmailAuthProvider.credential(user.email, currentPassword)
+        await reauthenticateWithCredential(user, credential)
+      }
       await updateEmail(user, newEmail)
     } catch (e) {
       let message = 'Failed to update email.'
@@ -184,7 +188,7 @@ export function AuthProvider({ children }) {
         message = e.message
       }
       setEmailError(message)
-      throw new Error(message)
+      throw makeHandledError(message, e)
     } finally {
       setIsLoading(false)
     }
@@ -210,7 +214,7 @@ export function AuthProvider({ children }) {
         message = e.message
       }
       setDeleteError(message)
-      throw new Error(message)
+      throw makeHandledError(message, e)
     } finally {
       setIsLoading(false)
     }

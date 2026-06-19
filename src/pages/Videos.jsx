@@ -254,7 +254,9 @@ export default function Videos() {
         <div className="space-y-3">
           {videos.map((video) => {
             const v = video.data
-            const statusStyle = ANALYSIS_STATUSES.find(s => s.value === v.analysisStatus)?.color || 'bg-gray-100 text-gray-600'
+            const status = ANALYSIS_STATUSES.find(s => s.value === v.analysisStatus)
+            const statusStyle = status?.color || 'bg-gray-100 text-gray-600'
+            const statusLabel = status ? t(status.labelKey) : (v.analysisStatus || t('common.unknown'))
             return (
               <div key={video.docId} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-4">
@@ -272,7 +274,7 @@ export default function Videos() {
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle}`}>
-                            {t(status.labelKey) || v.analysisStatus}
+                            {statusLabel}
                           </span>
                         </div>
                       </div>

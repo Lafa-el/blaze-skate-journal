@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { HeartPulse, Moon, Droplet, Scale, Ruler, AlertTriangle, Smile, Trash2, ChevronLeft } from 'lucide-react'
+import { HeartPulse, Moon, Scale, Ruler, AlertTriangle, Smile, Trash2, ChevronLeft } from 'lucide-react'
 import { bodyStatusService } from '../services/bodyStatusService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'

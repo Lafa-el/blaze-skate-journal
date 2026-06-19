@@ -39,18 +39,6 @@ async function getWeeklyReviewDocId(weekStartStr, athleteId = DEFAULT_ATHLETE_ID
 }
 
 /**
- * Compute the week start (Monday) for a given date string YYYY-MM-DD.
- */
-function getWeekStart(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(d)
-  monday.setDate(diff)
-  return monday.toISOString().slice(0, 10)
-}
-
-/**
  * Check if a date string falls within the given week (Monday to Sunday).
  */
 function isDateInWeek(dateStr, weekStartStr) {
@@ -240,7 +228,7 @@ export const weeklyReviewService = {
   /**
    * Delete a weekly review.
    */
-  async delete(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async delete(docId) {
     const snap = await getDoc(doc(db, COLLECTIONS.WEEKLY_REVIEWS, docId))
     if (snap.exists()) {
       await deleteDoc(doc(db, COLLECTIONS.WEEKLY_REVIEWS, docId))

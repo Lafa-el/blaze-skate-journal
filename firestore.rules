@@ -1,0 +1,95 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsIncomingAthleteData() {
+      return signedIn()
+        && request.resource.data.athleteId == request.auth.uid;
+    }
+
+    function ownsExistingAthleteData() {
+      return signedIn()
+        && resource.data.athleteId == request.auth.uid;
+    }
+
+    function keepsAthleteOwnerStable() {
+      return request.resource.data.athleteId == resource.data.athleteId;
+    }
+
+    match /athletes/{docId} {
+      allow create: if ownsIncomingAthleteData();
+      allow read, delete: if ownsExistingAthleteData();
+      allow update: if ownsExistingAthleteData()
+        && ownsIncomingAthleteData()
+        && keepsAthleteOwnerStable();
+    }
+
+    match /journal_days/{docId} {
+      allow create: if ownsIncomingAthleteData();
+      allow read, delete: if ownsExistingAthleteData();
+      allow update: if ownsExistingAthleteData()
+        && ownsIncomingAthleteData()
+        && keepsAthleteOwnerStable();
+    }
+
+    match /training_sessions/{docId} {
+      allow create: if ownsIncomingAthleteData();
+      allow read, delete: if ownsExistingAthleteData();
+      allow update: if ownsExistingAthleteData()
+        && ownsIncomingAthleteData()
+        && keepsAthleteOwnerStable();
+    }
+
+    match /coach_notes/{docId} {
+      allow create: if ownsIncomingAthleteData();
+      allow read, delete: if ownsExistingAthleteData();
+      allow update: if ownsExistingAthleteData()
+        && ownsIncomingAthleteData()
+        && keepsAthleteOwnerStable();
+    }
+
+    match /body_status/{docId} {
+      allow create: if ownsIncomingAthleteData();
+      allow read, delete: if ownsExistingAthleteData();
+      allow update: if ownsExistingAthleteData()
+        && ownsIncomingAthleteData()
+        && keepsAthleteOwnerStable();
+    }
+
+    match /performance_records/{docId} {
+      allow create: if ownsIncomingAthleteData();
+      allow read, delete: if ownsExistingAthleteData();
+      allow update: if ownsExistingAthleteData()
+        && ownsIncomingAthleteData()
+        && keepsAthleteOwnerStable();
+    }
+
+    match /video_refs/{docId} {
+      allow create: if ownsIncomingAthleteData();
+      allow read, delete: if ownsExistingAthleteData();
+      allow update: if ownsExistingAthleteData()
+        && ownsIncomingAthleteData()
+        && keepsAthleteOwnerStable();
+    }
+
+    match /weekly_reviews/{docId} {
+      allow create: if ownsIncomingAthleteData();
+      allow read, delete: if ownsExistingAthleteData();
+      allow update: if ownsExistingAthleteData()
+        && ownsIncomingAthleteData()
+        && keepsAthleteOwnerStable();
+    }
+
+    match /milestones/{docId} {
+      allow create: if ownsIncomingAthleteData();
+      allow read, delete: if ownsExistingAthleteData();
+      allow update: if ownsExistingAthleteData()
+        && ownsIncomingAthleteData()
+        && keepsAthleteOwnerStable();
+    }
+  }
+}

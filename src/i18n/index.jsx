@@ -10,7 +10,9 @@ export function LanguageProvider({ children }) {
     try {
       const saved = localStorage.getItem('blaze_lang')
       if (saved === 'en' || saved === 'zh') return saved
-    } catch {}
+    } catch {
+      // Ignore unavailable localStorage.
+    }
     return navigator.language?.startsWith('zh') ? 'zh' : DEFAULT_LANG
   })
 
@@ -18,7 +20,9 @@ export function LanguageProvider({ children }) {
     setLangState(newLang)
     try {
       localStorage.setItem('blaze_lang', newLang)
-    } catch {}
+    } catch {
+      // Ignore unavailable localStorage.
+    }
   }, [])
 
   const dictionaries = useMemo(

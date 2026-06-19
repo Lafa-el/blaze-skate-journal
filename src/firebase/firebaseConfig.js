@@ -35,7 +35,7 @@ if (hasAllConfig) {
   // This allows the app to render the login page even without Firebase config
   try {
     app = initializeApp({ projectId: 'placeholder' }, 'placeholder-app')
-  } catch (e) {
+  } catch {
     // If even placeholder init fails, create a minimal object
     app = { options: { projectId: 'placeholder' } }
   }

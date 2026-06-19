@@ -2,10 +2,9 @@ import {
   collection,
   query,
   where,
-  orderBy,
   getDocs,
 } from 'firebase/firestore'
-import { db, DEFAULT_ATHLETE_ID, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
+import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
 import { aggregateCampStats } from './summerCampService'
 
 /**
@@ -35,18 +34,6 @@ function isDateInWeek(dateStr, weekStartStr) {
   ws.setHours(0, 0, 0, 0)
   we.setHours(0, 0, 0, 0)
   return d >= ws && d <= we
-}
-
-/**
- * Compute week start (Monday) for a given date.
- */
-function getWeekStart(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(d)
-  monday.setDate(diff)
-  return monday.toISOString().slice(0, 10)
 }
 
 /**
@@ -183,7 +170,7 @@ export async function generateExportData(
   ]
 
   // Fetch all collections in parallel
-  const fetchPromises = collections.map(async ({ name, key, dateField }) => {
+  const fetchPromises = collections.map(async ({ name, key }) => {
     try {
       const rawDocs = await fetchCollection(name, athleteId)
       const flatRecords = flattenRecords(rawDocs)

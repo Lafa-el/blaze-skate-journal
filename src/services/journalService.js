@@ -66,7 +66,7 @@ export const journalService = {
   /**
    * Delete a journal day document.
    */
-  async delete(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async delete(docId) {
     // Delete the document by docId
     await deleteDoc(doc(db, COLLECTIONS.JOURNAL_DAYS, docId))
   },

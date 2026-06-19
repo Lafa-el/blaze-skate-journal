@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import {
-  Tent, MapPin, Users, Calendar, Clock, Target,
-  Flame, Award, Trophy, ChevronLeft, ChevronRight,
-  Dumbbell, Activity, Star, BookOpen,
+  Tent, Users, Calendar, Clock, Target,
+  Flame, Trophy, ChevronRight,
+  Dumbbell, Activity, Star,
 } from 'lucide-react'
 import { aggregateCampStats } from '../services/summerCampService'
 import { useAuth } from '../contexts/AuthContext'
@@ -245,7 +245,7 @@ export default function SummerCamp() {
                 <h2 className="font-semibold text-gray-900">{t('summerCamp.pbChanges')}</h2>
               </div>
               <div className="space-y-2">
-                {campData.pbChanges.map((pb, i) => (
+                {campData.pbChanges.map((pb) => (
                   <div
                     key={pb.event}
                     className={`flex items-center justify-between p-2.5 rounded-lg ${

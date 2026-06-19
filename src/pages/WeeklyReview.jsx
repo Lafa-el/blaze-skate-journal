@@ -7,7 +7,7 @@ import { weeklyReviewService } from '../services/weeklyReviewService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'
 
-function getWeekRange(weekStartStr, t) {
+function getWeekRange(weekStartStr) {
   const ws = new Date(weekStartStr + 'T00:00:00')
   const we = new Date(ws)
   we.setDate(we.getDate() + 6)
@@ -35,8 +35,6 @@ export default function WeeklyReview() {
   const [loading, setLoading] = useState(false)
   const [reviewLoading, setReviewLoading] = useState(false)
   const [error, setError] = useState('')
-  const [reviews, setReviews] = useState([])
-  const [currentReview, setCurrentReview] = useState(null)
   const [saveStatus, setSaveStatus] = useState('')
 
   // Week navigation
@@ -57,46 +55,27 @@ export default function WeeklyReview() {
   // Auto-aggregated data (stale during editing)
   const [autoData, setAutoData] = useState(null)
 
-  // Load review list
-  useEffect(() => {
-    if (!user) return
-    loadReviews()
-  }, [user])
-
   // Load specific week when weekStart changes
   useEffect(() => {
     if (!user || !weekStart) return
     loadWeekReview(weekStart)
   }, [user, weekStart])
 
-  const loadReviews = async () => {
-    setError('')
-    try {
-      const all = await weeklyReviewService.list({}, user.uid)
-      setReviews(all)
-    } catch (e) {
-      setError(t('weeklyReview.failedLoad'))
-      console.error('[WeeklyReview] Failed to load:', e)
-    }
-  }
-
   const loadWeekReview = async (wkStart) => {
     try {
       const existing = await weeklyReviewService.getByWeek(wkStart, user.uid)
       if (existing) {
         const d = existing.data
-        setCurrentReview(existing)
         setForm({
           bestMoment: d.bestMoment || '',
           nextWeekFocus: d.nextWeekFocus || '',
           parentSummary: d.parentSummary || '',
         })
       } else {
-        setCurrentReview(null)
         setForm({ bestMoment: '', nextWeekFocus: '', parentSummary: '' })
       }
     } catch {
-      setCurrentReview(null)
+      setForm({ bestMoment: '', nextWeekFocus: '', parentSummary: '' })
     }
   }
 
@@ -143,7 +122,6 @@ export default function WeeklyReview() {
         setSaveStatus(t('weeklyReview.saved'))
       }
       setTimeout(() => setSaveStatus(''), 5000)
-      await loadReviews()
     } catch (e) {
       setError(t('weeklyReview.saveFailed'))
       console.error('[WeeklyReview] Save failed:', e)
@@ -191,7 +169,7 @@ export default function WeeklyReview() {
           <button onClick={goToPrevWeek} className="p-1.5 rounded-lg hover:bg-gray-100">
             <ChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <h2 className="font-semibold text-gray-900">{getWeekRange(weekStart, t)}</h2>
+          <h2 className="font-semibold text-gray-900">{getWeekRange(weekStart)}</h2>
           <button onClick={goToNextWeek} className="p-1.5 rounded-lg hover:bg-gray-100">
             <ChevronRight className="w-5 h-5 text-gray-600" />
           </button>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Bookmark, ChevronLeft, ChevronRight, Trash2, Flag, Edit3 } from 'lucide-react'
+import { Plus, Bookmark, Trash2, Flag, Edit3 } from 'lucide-react'
 import { coachNoteService } from '../services/coachNoteService'
 import { useAuth } from '../contexts/AuthContext'
 
