@@ -11,18 +11,17 @@ import {
   doc,
   getDoc,
 } from 'firebase/firestore'
-import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
-
-const makeBaseFilters = (athleteId) => ({
-  athleteId,
-  sourceApp: SOURCE_APP,
-})
+import { db, COLLECTIONS } from '../firebase/firestore'
+import { JOURNAL_SCHEMA_VERSION } from '../constants/skatingx'
+import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { requireUid } from '../utils/validation'
 
 export const bodyStatusService = {
   /**
    * Get body status readings, optionally limited.
    */
   async list(athleteId, limitCount = null) {
+    requireUid(athleteId, 'bodyStatusService.list')
     let q = query(
       collection(db, COLLECTIONS.BODY_STATUS),
       where('athleteId', '==', athleteId),
@@ -38,6 +37,7 @@ export const bodyStatusService = {
    * Get the latest body status reading.
    */
   async getLatest(athleteId) {
+    requireUid(athleteId, 'bodyStatusService.getLatest')
     const readings = await this.list(athleteId, 1)
     return readings[0] || null
   },
@@ -47,12 +47,11 @@ export const bodyStatusService = {
    * @param {object} data - Body metrics (weight, bodyFatPercent, restingHR, vo2Max, energyLevel, etc.)
    */
   async create(data, athleteId) {
+    requireUid(athleteId, 'bodyStatusService.create')
     const ref = await addDoc(collection(db, COLLECTIONS.BODY_STATUS), {
-      ...makeBaseFilters(athleteId),
       date: data.date || new Date().toISOString().slice(0, 10),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       ...data,
+      ...createRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId: ref.id, created: true }
   },
@@ -60,13 +59,14 @@ export const bodyStatusService = {
   /**
    * Update an existing body status reading.
    */
-  async update(docId, data) {
+  async update(docId, data, athleteId) {
+    requireUid(athleteId, 'bodyStatusService.update')
     const snap = await getDoc(doc(db, COLLECTIONS.BODY_STATUS, docId))
-    if (!snap.exists()) return null
+    if (!snap.exists() || snap.data().athleteId !== athleteId) return null
 
     await updateDoc(doc(db, COLLECTIONS.BODY_STATUS, docId), {
       ...data,
-      updatedAt: new Date().toISOString(),
+      ...updateRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId, created: false }
   },
@@ -74,9 +74,10 @@ export const bodyStatusService = {
   /**
    * Delete a body status reading.
    */
-  async delete(docId) {
+  async delete(docId, athleteId) {
+    requireUid(athleteId, 'bodyStatusService.delete')
     const snap = await getDoc(doc(db, COLLECTIONS.BODY_STATUS, docId))
-    if (snap.exists()) {
+    if (snap.exists() && snap.data().athleteId === athleteId) {
       await deleteDoc(doc(db, COLLECTIONS.BODY_STATUS, docId))
     }
   },

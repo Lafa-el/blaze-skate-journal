@@ -11,12 +11,10 @@ import {
   doc,
   getCountFromServer,
 } from 'firebase/firestore'
-import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
-
-const makeBaseFilters = (athleteId) => ({
-  athleteId,
-  sourceApp: SOURCE_APP,
-})
+import { db, COLLECTIONS } from '../firebase/firestore'
+import { JOURNAL_SCHEMA_VERSION } from '../constants/skatingx'
+import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { requireUid } from '../utils/validation'
 
 export const sessionService = {
   /**
@@ -27,6 +25,7 @@ export const sessionService = {
    * @returns { Promise<Array<{ docId: string, data: object }>> }
    */
   async list(athleteId, sortBy = 'date', limitCount = null) {
+    requireUid(athleteId, 'sessionService.list')
     let q = query(
       collection(db, COLLECTIONS.TRAINING_SESSIONS),
       where('athleteId', '==', athleteId),
@@ -42,6 +41,7 @@ export const sessionService = {
    * Get a single session by Firestore doc ID.
    */
   async getById(docId, athleteId) {
+    requireUid(athleteId, 'sessionService.getById')
     const q = query(
       collection(db, COLLECTIONS.TRAINING_SESSIONS),
       where('athleteId', '==', athleteId),
@@ -58,11 +58,10 @@ export const sessionService = {
    * @param {object} data - Session fields (exclude athleteId, sourceApp, timestamps)
    */
   async create(data, athleteId) {
+    requireUid(athleteId, 'sessionService.create')
     const ref = await addDoc(collection(db, COLLECTIONS.TRAINING_SESSIONS), {
-      ...makeBaseFilters(athleteId),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       ...data,
+      ...createRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId: ref.id, created: true }
   },
@@ -71,12 +70,13 @@ export const sessionService = {
    * Update an existing training session.
    */
   async update(docId, data, athleteId) {
+    requireUid(athleteId, 'sessionService.update')
     const session = await this.getById(docId, athleteId)
     if (!session) return null
 
     await updateDoc(doc(db, COLLECTIONS.TRAINING_SESSIONS, docId), {
       ...data,
-      updatedAt: new Date().toISOString(),
+      ...updateRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId, created: false }
   },
@@ -85,6 +85,7 @@ export const sessionService = {
    * Delete a training session.
    */
   async delete(docId, athleteId) {
+    requireUid(athleteId, 'sessionService.delete')
     const session = await this.getById(docId, athleteId)
     if (session) {
       await deleteDoc(doc(db, COLLECTIONS.TRAINING_SESSIONS, docId))
@@ -95,6 +96,7 @@ export const sessionService = {
    * Count sessions for the athlete.
    */
   async count(athleteId) {
+    requireUid(athleteId, 'sessionService.count')
     const q = query(
       collection(db, COLLECTIONS.TRAINING_SESSIONS),
       where('athleteId', '==', athleteId),

@@ -9,15 +9,14 @@ import {
   updateDoc,
   deleteDoc,
 } from 'firebase/firestore'
-import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
-
-const makeBaseFilters = (athleteId) => ({
-  athleteId,
-  sourceApp: SOURCE_APP,
-})
+import { db, COLLECTIONS } from '../firebase/firestore'
+import { JOURNAL_SCHEMA_VERSION } from '../constants/skatingx'
+import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { requireUid } from '../utils/validation'
 
 export const milestoneService = {
   async list(filters = {}, athleteId) {
+    requireUid(athleteId, 'milestoneService.list')
     let q = query(
       collection(db, COLLECTIONS.MILESTONES),
       where('athleteId', '==', athleteId),
@@ -31,6 +30,7 @@ export const milestoneService = {
   },
 
   async getById(docId, athleteId) {
+    requireUid(athleteId, 'milestoneService.getById')
     const q = query(
       collection(db, COLLECTIONS.MILESTONES),
       where('athleteId', '==', athleteId),
@@ -43,28 +43,29 @@ export const milestoneService = {
   },
 
   async create(data, athleteId) {
+    requireUid(athleteId, 'milestoneService.create')
     const ref = await addDoc(collection(db, COLLECTIONS.MILESTONES), {
-      ...makeBaseFilters(athleteId),
       date: data.date || new Date().toISOString().slice(0, 10),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       ...data,
+      ...createRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId: ref.id, created: true }
   },
 
   async update(docId, data, athleteId) {
+    requireUid(athleteId, 'milestoneService.update')
     const milestone = await this.getById(docId, athleteId)
     if (!milestone) return null
 
     await updateDoc(doc(db, COLLECTIONS.MILESTONES, docId), {
       ...data,
-      updatedAt: new Date().toISOString(),
+      ...updateRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId, created: false }
   },
 
   async delete(docId, athleteId) {
+    requireUid(athleteId, 'milestoneService.delete')
     const milestone = await this.getById(docId, athleteId)
     if (milestone) {
       await deleteDoc(doc(db, COLLECTIONS.MILESTONES, docId))

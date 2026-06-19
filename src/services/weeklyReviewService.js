@@ -11,21 +11,20 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore'
-import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
+import { db, COLLECTIONS } from '../firebase/firestore'
+import { JOURNAL_SCHEMA_VERSION } from '../constants/skatingx'
+import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { requireUid } from '../utils/validation'
 import { sessionService } from './sessionService'
 import { coachNoteService } from './coachNoteService'
 import { performanceService } from './performanceService'
-
-const makeBaseFilters = (athleteId) => ({
-  athleteId,
-  sourceApp: SOURCE_APP,
-})
 
 /**
  * Helper to derive a stable document ID for a weekly review.
  * Since there should be one review per week, we derive the ID from the week start date.
  */
 async function getWeeklyReviewDocId(weekStartStr, athleteId) {
+  requireUid(athleteId, 'weeklyReviewService.getWeeklyReviewDocId')
   const q = query(
     collection(db, COLLECTIONS.WEEKLY_REVIEWS),
     where('athleteId', '==', athleteId),
@@ -147,6 +146,7 @@ export const weeklyReviewService = {
    * @param {object} [filters] - { limit }
    */
   async list(filters = {}, athleteId) {
+    requireUid(athleteId, 'weeklyReviewService.list')
     let q = query(
       collection(db, COLLECTIONS.WEEKLY_REVIEWS),
       where('athleteId', '==', athleteId),
@@ -164,6 +164,7 @@ export const weeklyReviewService = {
    * Get a weekly review by week start date (YYYY-MM-DD).
    */
   async getByWeek(weekStartStr, athleteId) {
+    requireUid(athleteId, 'weeklyReviewService.getByWeek')
     const q = query(
       collection(db, COLLECTIONS.WEEKLY_REVIEWS),
       where('athleteId', '==', athleteId),
@@ -181,6 +182,7 @@ export const weeklyReviewService = {
    * @param {string} weekStartStr - Week start date (YYYY-MM-DD)
    */
   async autoGenerateStats(weekStartStr, athleteId) {
+    requireUid(athleteId, 'weeklyReviewService.autoGenerateStats')
     const [sessions, topTechnicalIssues, topCoachNotes, bestPerformances] = await Promise.all([
       aggregateSessions(weekStartStr, athleteId),
       aggregateTopTechnicalIssues(weekStartStr, athleteId),
@@ -201,26 +203,26 @@ export const weeklyReviewService = {
    * @param {object} data - Review fields (weekStart, scores, highlights, achievements, bestMoment, nextWeekFocus, parentSummary, etc.)
    */
   async save(data, athleteId) {
+    requireUid(athleteId, 'weeklyReviewService.save')
     const existingDocId = await getWeeklyReviewDocId(data.weekStart, athleteId)
 
     const base = {
-      ...makeBaseFilters(athleteId),
       weekStart: data.weekStart,
-      updatedAt: new Date().toISOString(),
     }
 
     if (existingDocId) {
       await updateDoc(doc(db, COLLECTIONS.WEEKLY_REVIEWS, existingDocId), {
         ...data,
         ...base,
+        ...updateRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
       })
       return { docId: existingDocId, created: false }
     }
 
     const ref = await addDoc(collection(db, COLLECTIONS.WEEKLY_REVIEWS), {
       ...base,
-      createdAt: new Date().toISOString(),
       ...data,
+      ...createRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId: ref.id, created: true }
   },
@@ -228,9 +230,10 @@ export const weeklyReviewService = {
   /**
    * Delete a weekly review.
    */
-  async delete(docId) {
+  async delete(docId, athleteId) {
+    requireUid(athleteId, 'weeklyReviewService.delete')
     const snap = await getDoc(doc(db, COLLECTIONS.WEEKLY_REVIEWS, docId))
-    if (snap.exists()) {
+    if (snap.exists() && snap.data().athleteId === athleteId) {
       await deleteDoc(doc(db, COLLECTIONS.WEEKLY_REVIEWS, docId))
     }
   },

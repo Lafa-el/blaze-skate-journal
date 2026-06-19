@@ -8,48 +8,41 @@ import {
   getDocs,
   getDoc,
 } from 'firebase/firestore'
-import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
-
-function assertUid(uid) {
-  if (!uid) {
-    throw new Error('A Firebase Auth UID is required for athlete profile operations.')
-  }
-}
+import { db, COLLECTIONS } from '../firebase/firestore'
+import { PROFILE_SCHEMA_VERSION } from '../constants/skatingx'
+import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { requireUid } from '../utils/validation'
 
 export const athleteService = {
   async getAthleteProfile(uid) {
-    assertUid(uid)
+    requireUid(uid, 'athleteService.getAthleteProfile')
     const snap = await getDoc(doc(db, COLLECTIONS.ATHLETES, uid))
     if (!snap.exists()) return null
     return { docId: snap.id, data: snap.data() }
   },
 
   async createAthleteProfile(uid, data = {}) {
-    assertUid(uid)
-    const now = new Date().toISOString()
+    requireUid(uid, 'athleteService.createAthleteProfile')
+    const metadata = createRecordMetadata(uid, PROFILE_SCHEMA_VERSION)
     await setDoc(doc(db, COLLECTIONS.ATHLETES, uid), {
       ...data,
-      athleteId: uid,
-      sourceApp: SOURCE_APP,
-      createdAt: data.createdAt || now,
-      updatedAt: now,
+      ...metadata,
+      createdAt: data.createdAt || metadata.createdAt,
     })
     return { docId: uid, created: true }
   },
 
   async updateAthleteProfile(uid, data = {}) {
-    assertUid(uid)
+    requireUid(uid, 'athleteService.updateAthleteProfile')
     await updateDoc(doc(db, COLLECTIONS.ATHLETES, uid), {
       ...data,
-      athleteId: uid,
-      sourceApp: SOURCE_APP,
-      updatedAt: new Date().toISOString(),
+      ...updateRecordMetadata(uid, PROFILE_SCHEMA_VERSION),
     })
     return { docId: uid, created: false }
   },
 
   async upsertAthleteProfile(uid, data = {}) {
-    assertUid(uid)
+    requireUid(uid, 'athleteService.upsertAthleteProfile')
     const existing = await this.getAthleteProfile(uid)
     if (existing) {
       return this.updateAthleteProfile(uid, data)
@@ -59,7 +52,7 @@ export const athleteService = {
   },
 
   async getLegacyAthleteProfilesByAthleteId(uid) {
-    assertUid(uid)
+    requireUid(uid, 'athleteService.getLegacyAthleteProfilesByAthleteId')
     const q = query(collection(db, COLLECTIONS.ATHLETES), where('athleteId', '==', uid))
     const snapshot = await getDocs(q)
     return snapshot.docs

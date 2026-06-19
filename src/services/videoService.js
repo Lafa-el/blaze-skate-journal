@@ -9,12 +9,10 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore'
-import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
-
-const makeBaseFilters = (athleteId) => ({
-  athleteId,
-  sourceApp: SOURCE_APP,
-})
+import { db, COLLECTIONS } from '../firebase/firestore'
+import { JOURNAL_SCHEMA_VERSION } from '../constants/skatingx'
+import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { requireUid } from '../utils/validation'
 
 export const videoService = {
   /**
@@ -22,6 +20,7 @@ export const videoService = {
    * @param {object} [filters] - { sessionId, analysisStatus, technicalTag, limit }
    */
   async list(filters = {}, athleteId) {
+    requireUid(athleteId, 'videoService.list')
     const q = query(
       collection(db, COLLECTIONS.VIDEO_REFS),
       where('athleteId', '==', athleteId),
@@ -57,6 +56,7 @@ export const videoService = {
    * Get a single video reference.
    */
   async getById(docId, athleteId) {
+    requireUid(athleteId, 'videoService.getById')
     const q = query(
       collection(db, COLLECTIONS.VIDEO_REFS),
       where('athleteId', '==', athleteId),
@@ -73,11 +73,10 @@ export const videoService = {
    * @param {object} data - Video fields (title, fileName, externalUrl, sessionId, technicalTags, analysisStatus, notes)
    */
   async create(data, athleteId) {
+    requireUid(athleteId, 'videoService.create')
     const ref = await addDoc(collection(db, COLLECTIONS.VIDEO_REFS), {
-      ...makeBaseFilters(athleteId),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       ...data,
+      ...createRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId: ref.id, created: true }
   },
@@ -86,12 +85,13 @@ export const videoService = {
    * Update an existing video reference.
    */
   async update(docId, data, athleteId) {
+    requireUid(athleteId, 'videoService.update')
     const video = await this.getById(docId, athleteId)
     if (!video) return null
 
     await updateDoc(doc(db, COLLECTIONS.VIDEO_REFS, docId), {
       ...data,
-      updatedAt: new Date().toISOString(),
+      ...updateRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId, created: false }
   },
@@ -100,6 +100,7 @@ export const videoService = {
    * Delete a video reference.
    */
   async delete(docId, athleteId) {
+    requireUid(athleteId, 'videoService.delete')
     const video = await this.getById(docId, athleteId)
     if (video) {
       await deleteDoc(doc(db, COLLECTIONS.VIDEO_REFS, docId))

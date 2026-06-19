@@ -9,12 +9,10 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore'
-import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
-
-const makeBaseFilters = (athleteId) => ({
-  athleteId,
-  sourceApp: SOURCE_APP,
-})
+import { db, COLLECTIONS } from '../firebase/firestore'
+import { JOURNAL_SCHEMA_VERSION } from '../constants/skatingx'
+import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { requireUid } from '../utils/validation'
 
 export const performanceService = {
   /**
@@ -22,6 +20,7 @@ export const performanceService = {
    * @param {object} [filters] - { metric, limit }
    */
   async list(filters = {}, athleteId) {
+    requireUid(athleteId, 'performanceService.list')
     const q = query(
       collection(db, COLLECTIONS.PERFORMANCE_RECORDS),
       where('athleteId', '==', athleteId),
@@ -50,6 +49,7 @@ export const performanceService = {
    * Get a single performance record.
    */
   async getById(docId, athleteId) {
+    requireUid(athleteId, 'performanceService.getById')
     const snap = await getDoc(doc(db, COLLECTIONS.PERFORMANCE_RECORDS, docId))
     if (!snap.exists()) return null
     const data = snap.data()
@@ -62,12 +62,11 @@ export const performanceService = {
    * @param {object} data - Performance fields (metric, value, notes, etc.)
    */
   async create(data, athleteId) {
+    requireUid(athleteId, 'performanceService.create')
     const ref = await addDoc(collection(db, COLLECTIONS.PERFORMANCE_RECORDS), {
-      ...makeBaseFilters(athleteId),
       date: data.date || new Date().toISOString().slice(0, 10),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       ...data,
+      ...createRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId: ref.id, created: true }
   },
@@ -76,12 +75,13 @@ export const performanceService = {
    * Update an existing performance record.
    */
   async update(docId, data, athleteId) {
+    requireUid(athleteId, 'performanceService.update')
     const record = await this.getById(docId, athleteId)
     if (!record) return null
 
     await updateDoc(doc(db, COLLECTIONS.PERFORMANCE_RECORDS, docId), {
       ...data,
-      updatedAt: new Date().toISOString(),
+      ...updateRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId, created: false }
   },
@@ -90,6 +90,7 @@ export const performanceService = {
    * Delete a performance record.
    */
   async delete(docId, athleteId) {
+    requireUid(athleteId, 'performanceService.delete')
     const record = await this.getById(docId, athleteId)
     if (record) {
       await deleteDoc(doc(db, COLLECTIONS.PERFORMANCE_RECORDS, docId))

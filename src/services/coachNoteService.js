@@ -10,12 +10,10 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore'
-import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
-
-const makeBaseFilters = (athleteId) => ({
-  athleteId,
-  sourceApp: SOURCE_APP,
-})
+import { db, COLLECTIONS } from '../firebase/firestore'
+import { JOURNAL_SCHEMA_VERSION } from '../constants/skatingx'
+import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { requireUid } from '../utils/validation'
 
 export const coachNoteService = {
   /**
@@ -23,6 +21,7 @@ export const coachNoteService = {
    * @param {object} [filters] - { coach, priority, limit }
    */
   async list(filters = {}, athleteId) {
+    requireUid(athleteId, 'coachNoteService.list')
     let q = query(
       collection(db, COLLECTIONS.COACH_NOTES),
       where('athleteId', '==', athleteId),
@@ -47,6 +46,7 @@ export const coachNoteService = {
    * Get a single coach note by Firestore doc ID.
    */
   async getById(docId, athleteId) {
+    requireUid(athleteId, 'coachNoteService.getById')
     const q = query(
       collection(db, COLLECTIONS.COACH_NOTES),
       where('athleteId', '==', athleteId),
@@ -63,12 +63,11 @@ export const coachNoteService = {
    * @param {object} data - Note fields (exclude athleteId, sourceApp, timestamps)
    */
   async create(data, athleteId) {
+    requireUid(athleteId, 'coachNoteService.create')
     const ref = await addDoc(collection(db, COLLECTIONS.COACH_NOTES), {
-      ...makeBaseFilters(athleteId),
       date: data.date || new Date().toISOString().slice(0, 10),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
       ...data,
+      ...createRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId: ref.id, created: true }
   },
@@ -77,12 +76,13 @@ export const coachNoteService = {
    * Update an existing coach note.
    */
   async update(docId, data, athleteId) {
+    requireUid(athleteId, 'coachNoteService.update')
     const note = await this.getById(docId, athleteId)
     if (!note) return null
 
     await updateDoc(doc(db, COLLECTIONS.COACH_NOTES, docId), {
       ...data,
-      updatedAt: new Date().toISOString(),
+      ...updateRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
     })
     return { docId, created: false }
   },
@@ -91,6 +91,7 @@ export const coachNoteService = {
    * Delete a coach note.
    */
   async delete(docId, athleteId) {
+    requireUid(athleteId, 'coachNoteService.delete')
     const note = await this.getById(docId, athleteId)
     if (note) {
       await deleteDoc(doc(db, COLLECTIONS.COACH_NOTES, docId))
