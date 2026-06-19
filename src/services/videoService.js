@@ -9,9 +9,9 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore'
-import { db, DEFAULT_ATHLETE_ID, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
+import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
 
-const makeBaseFilters = (athleteId = DEFAULT_ATHLETE_ID) => ({
+const makeBaseFilters = (athleteId) => ({
   athleteId,
   sourceApp: SOURCE_APP,
 })
@@ -21,7 +21,7 @@ export const videoService = {
    * Get video references, optionally filtered.
    * @param {object} [filters] - { sessionId, analysisStatus, technicalTag, limit }
    */
-  async list(filters = {}, athleteId = DEFAULT_ATHLETE_ID) {
+  async list(filters = {}, athleteId) {
     const q = query(
       collection(db, COLLECTIONS.VIDEO_REFS),
       where('athleteId', '==', athleteId),
@@ -56,7 +56,7 @@ export const videoService = {
   /**
    * Get a single video reference.
    */
-  async getById(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async getById(docId, athleteId) {
     const q = query(
       collection(db, COLLECTIONS.VIDEO_REFS),
       where('athleteId', '==', athleteId),
@@ -72,7 +72,7 @@ export const videoService = {
    * Create a new video reference.
    * @param {object} data - Video fields (title, fileName, externalUrl, sessionId, technicalTags, analysisStatus, notes)
    */
-  async create(data, athleteId = DEFAULT_ATHLETE_ID) {
+  async create(data, athleteId) {
     const ref = await addDoc(collection(db, COLLECTIONS.VIDEO_REFS), {
       ...makeBaseFilters(athleteId),
       createdAt: new Date().toISOString(),
@@ -85,7 +85,7 @@ export const videoService = {
   /**
    * Update an existing video reference.
    */
-  async update(docId, data, athleteId = DEFAULT_ATHLETE_ID) {
+  async update(docId, data, athleteId) {
     const video = await this.getById(docId, athleteId)
     if (!video) return null
 
@@ -99,7 +99,7 @@ export const videoService = {
   /**
    * Delete a video reference.
    */
-  async delete(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async delete(docId, athleteId) {
     const video = await this.getById(docId, athleteId)
     if (video) {
       await deleteDoc(doc(db, COLLECTIONS.VIDEO_REFS, docId))

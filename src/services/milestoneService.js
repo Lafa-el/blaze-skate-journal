@@ -9,15 +9,15 @@ import {
   updateDoc,
   deleteDoc,
 } from 'firebase/firestore'
-import { db, DEFAULT_ATHLETE_ID, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
+import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
 
-const makeBaseFilters = (athleteId = DEFAULT_ATHLETE_ID) => ({
+const makeBaseFilters = (athleteId) => ({
   athleteId,
   sourceApp: SOURCE_APP,
 })
 
 export const milestoneService = {
-  async list(filters = {}, athleteId = DEFAULT_ATHLETE_ID) {
+  async list(filters = {}, athleteId) {
     let q = query(
       collection(db, COLLECTIONS.MILESTONES),
       where('athleteId', '==', athleteId),
@@ -30,7 +30,7 @@ export const milestoneService = {
     return snapshot.docs.map((d) => ({ docId: d.id, data: d.data() }))
   },
 
-  async getById(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async getById(docId, athleteId) {
     const q = query(
       collection(db, COLLECTIONS.MILESTONES),
       where('athleteId', '==', athleteId),
@@ -42,7 +42,7 @@ export const milestoneService = {
     return { docId: d.id, data: d.data() }
   },
 
-  async create(data, athleteId = DEFAULT_ATHLETE_ID) {
+  async create(data, athleteId) {
     const ref = await addDoc(collection(db, COLLECTIONS.MILESTONES), {
       ...makeBaseFilters(athleteId),
       date: data.date || new Date().toISOString().slice(0, 10),
@@ -53,7 +53,7 @@ export const milestoneService = {
     return { docId: ref.id, created: true }
   },
 
-  async update(docId, data, athleteId = DEFAULT_ATHLETE_ID) {
+  async update(docId, data, athleteId) {
     const milestone = await this.getById(docId, athleteId)
     if (!milestone) return null
 
@@ -64,7 +64,7 @@ export const milestoneService = {
     return { docId, created: false }
   },
 
-  async delete(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async delete(docId, athleteId) {
     const milestone = await this.getById(docId, athleteId)
     if (milestone) {
       await deleteDoc(doc(db, COLLECTIONS.MILESTONES, docId))

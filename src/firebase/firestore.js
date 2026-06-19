@@ -15,5 +15,4 @@ export const COLLECTIONS = {
   MILESTONES: 'milestones',
 }
 
-export const DEFAULT_ATHLETE_ID = 'lindsay_lin'
 export const SOURCE_APP = 'blaze-skate-journal'

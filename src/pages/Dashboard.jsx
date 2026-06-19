@@ -82,7 +82,8 @@ export default function Dashboard() {
 
   const loadProfile = async () => {
     try {
-      const athlete = await athleteService.get(user?.uid || 'default')
+      if (!user?.uid) return
+      const athlete = await athleteService.getAthleteProfile(user.uid)
       if (athlete) {
         if (athlete.data?.avatarUrl) setAvatarUrl(athlete.data.avatarUrl)
         if (athlete.data?.birthday) setBirthday(athlete.data.birthday)

@@ -11,9 +11,9 @@ import {
   doc,
   getCountFromServer,
 } from 'firebase/firestore'
-import { db, DEFAULT_ATHLETE_ID, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
+import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
 
-const makeBaseFilters = (athleteId = DEFAULT_ATHLETE_ID) => ({
+const makeBaseFilters = (athleteId) => ({
   athleteId,
   sourceApp: SOURCE_APP,
 })
@@ -26,7 +26,7 @@ export const sessionService = {
    * @param {number} [limitCount]
    * @returns { Promise<Array<{ docId: string, data: object }>> }
    */
-  async list(athleteId = DEFAULT_ATHLETE_ID, sortBy = 'date', limitCount = null) {
+  async list(athleteId, sortBy = 'date', limitCount = null) {
     let q = query(
       collection(db, COLLECTIONS.TRAINING_SESSIONS),
       where('athleteId', '==', athleteId),
@@ -41,7 +41,7 @@ export const sessionService = {
   /**
    * Get a single session by Firestore doc ID.
    */
-  async getById(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async getById(docId, athleteId) {
     const q = query(
       collection(db, COLLECTIONS.TRAINING_SESSIONS),
       where('athleteId', '==', athleteId),
@@ -57,7 +57,7 @@ export const sessionService = {
    * Create a new training session.
    * @param {object} data - Session fields (exclude athleteId, sourceApp, timestamps)
    */
-  async create(data, athleteId = DEFAULT_ATHLETE_ID) {
+  async create(data, athleteId) {
     const ref = await addDoc(collection(db, COLLECTIONS.TRAINING_SESSIONS), {
       ...makeBaseFilters(athleteId),
       createdAt: new Date().toISOString(),
@@ -70,7 +70,7 @@ export const sessionService = {
   /**
    * Update an existing training session.
    */
-  async update(docId, data, athleteId = DEFAULT_ATHLETE_ID) {
+  async update(docId, data, athleteId) {
     const session = await this.getById(docId, athleteId)
     if (!session) return null
 
@@ -84,7 +84,7 @@ export const sessionService = {
   /**
    * Delete a training session.
    */
-  async delete(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async delete(docId, athleteId) {
     const session = await this.getById(docId, athleteId)
     if (session) {
       await deleteDoc(doc(db, COLLECTIONS.TRAINING_SESSIONS, docId))
@@ -94,7 +94,7 @@ export const sessionService = {
   /**
    * Count sessions for the athlete.
    */
-  async count(athleteId = DEFAULT_ATHLETE_ID) {
+  async count(athleteId) {
     const q = query(
       collection(db, COLLECTIONS.TRAINING_SESSIONS),
       where('athleteId', '==', athleteId),

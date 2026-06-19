@@ -11,9 +11,9 @@ import {
   doc,
   getDoc,
 } from 'firebase/firestore'
-import { db, DEFAULT_ATHLETE_ID, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
+import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
 
-const makeBaseFilters = (athleteId = DEFAULT_ATHLETE_ID) => ({
+const makeBaseFilters = (athleteId) => ({
   athleteId,
   sourceApp: SOURCE_APP,
 })
@@ -22,7 +22,7 @@ export const bodyStatusService = {
   /**
    * Get body status readings, optionally limited.
    */
-  async list(athleteId = DEFAULT_ATHLETE_ID, limitCount = null) {
+  async list(athleteId, limitCount = null) {
     let q = query(
       collection(db, COLLECTIONS.BODY_STATUS),
       where('athleteId', '==', athleteId),
@@ -37,7 +37,7 @@ export const bodyStatusService = {
   /**
    * Get the latest body status reading.
    */
-  async getLatest(athleteId = DEFAULT_ATHLETE_ID) {
+  async getLatest(athleteId) {
     const readings = await this.list(athleteId, 1)
     return readings[0] || null
   },
@@ -46,7 +46,7 @@ export const bodyStatusService = {
    * Create a new body status reading.
    * @param {object} data - Body metrics (weight, bodyFatPercent, restingHR, vo2Max, energyLevel, etc.)
    */
-  async create(data, athleteId = DEFAULT_ATHLETE_ID) {
+  async create(data, athleteId) {
     const ref = await addDoc(collection(db, COLLECTIONS.BODY_STATUS), {
       ...makeBaseFilters(athleteId),
       date: data.date || new Date().toISOString().slice(0, 10),

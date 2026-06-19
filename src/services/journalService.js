@@ -8,9 +8,9 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore'
-import { db, DEFAULT_ATHLETE_ID, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
+import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
 
-const makeBaseFilters = (athleteId = DEFAULT_ATHLETE_ID) => ({
+const makeBaseFilters = (athleteId) => ({
   athleteId,
   sourceApp: SOURCE_APP,
 })
@@ -21,7 +21,7 @@ export const journalService = {
    * @param {string} [dateStr] - YYYY-MM-DD, defaults to today
    * @returns { Promise<{ docId: string, data: object } | null> }
    */
-  async getByDate(dateStr = new Date().toISOString().slice(0, 10), athleteId = DEFAULT_ATHLETE_ID) {
+  async getByDate(dateStr = new Date().toISOString().slice(0, 10), athleteId) {
     const q = query(
       collection(db, COLLECTIONS.JOURNAL_DAYS),
       where('athleteId', '==', athleteId),
@@ -37,7 +37,7 @@ export const journalService = {
    * Create or update a journal day document.
    * @param {object} data - Journal fields (athleteId/sourceApp/updatedAt are auto-filled; date and other fields are merged)
    */
-  async save(data, athleteId = DEFAULT_ATHLETE_ID) {
+  async save(data, athleteId) {
     const dateStr = data.date || new Date().toISOString().slice(0, 10)
     const existing = await this.getByDate(dateStr, athleteId)
 

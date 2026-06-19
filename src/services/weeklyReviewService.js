@@ -11,12 +11,12 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore'
-import { db, DEFAULT_ATHLETE_ID, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
+import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
 import { sessionService } from './sessionService'
 import { coachNoteService } from './coachNoteService'
 import { performanceService } from './performanceService'
 
-const makeBaseFilters = (athleteId = DEFAULT_ATHLETE_ID) => ({
+const makeBaseFilters = (athleteId) => ({
   athleteId,
   sourceApp: SOURCE_APP,
 })
@@ -25,7 +25,7 @@ const makeBaseFilters = (athleteId = DEFAULT_ATHLETE_ID) => ({
  * Helper to derive a stable document ID for a weekly review.
  * Since there should be one review per week, we derive the ID from the week start date.
  */
-async function getWeeklyReviewDocId(weekStartStr, athleteId = DEFAULT_ATHLETE_ID) {
+async function getWeeklyReviewDocId(weekStartStr, athleteId) {
   const q = query(
     collection(db, COLLECTIONS.WEEKLY_REVIEWS),
     where('athleteId', '==', athleteId),
@@ -146,7 +146,7 @@ export const weeklyReviewService = {
    * Get weekly reviews.
    * @param {object} [filters] - { limit }
    */
-  async list(filters = {}, athleteId = DEFAULT_ATHLETE_ID) {
+  async list(filters = {}, athleteId) {
     let q = query(
       collection(db, COLLECTIONS.WEEKLY_REVIEWS),
       where('athleteId', '==', athleteId),
@@ -163,7 +163,7 @@ export const weeklyReviewService = {
   /**
    * Get a weekly review by week start date (YYYY-MM-DD).
    */
-  async getByWeek(weekStartStr, athleteId = DEFAULT_ATHLETE_ID) {
+  async getByWeek(weekStartStr, athleteId) {
     const q = query(
       collection(db, COLLECTIONS.WEEKLY_REVIEWS),
       where('athleteId', '==', athleteId),
@@ -180,7 +180,7 @@ export const weeklyReviewService = {
    * Fetches all session, coach note, and performance data and aggregates by week.
    * @param {string} weekStartStr - Week start date (YYYY-MM-DD)
    */
-  async autoGenerateStats(weekStartStr, athleteId = DEFAULT_ATHLETE_ID) {
+  async autoGenerateStats(weekStartStr, athleteId) {
     const [sessions, topTechnicalIssues, topCoachNotes, bestPerformances] = await Promise.all([
       aggregateSessions(weekStartStr, athleteId),
       aggregateTopTechnicalIssues(weekStartStr, athleteId),
@@ -200,7 +200,7 @@ export const weeklyReviewService = {
    * Create or update a weekly review.
    * @param {object} data - Review fields (weekStart, scores, highlights, achievements, bestMoment, nextWeekFocus, parentSummary, etc.)
    */
-  async save(data, athleteId = DEFAULT_ATHLETE_ID) {
+  async save(data, athleteId) {
     const existingDocId = await getWeeklyReviewDocId(data.weekStart, athleteId)
 
     const base = {

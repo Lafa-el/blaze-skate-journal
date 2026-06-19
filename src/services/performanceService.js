@@ -9,9 +9,9 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore'
-import { db, DEFAULT_ATHLETE_ID, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
+import { db, SOURCE_APP, COLLECTIONS } from '../firebase/firestore'
 
-const makeBaseFilters = (athleteId = DEFAULT_ATHLETE_ID) => ({
+const makeBaseFilters = (athleteId) => ({
   athleteId,
   sourceApp: SOURCE_APP,
 })
@@ -21,7 +21,7 @@ export const performanceService = {
    * Get performance records, optionally filtered.
    * @param {object} [filters] - { metric, limit }
    */
-  async list(filters = {}, athleteId = DEFAULT_ATHLETE_ID) {
+  async list(filters = {}, athleteId) {
     const q = query(
       collection(db, COLLECTIONS.PERFORMANCE_RECORDS),
       where('athleteId', '==', athleteId),
@@ -49,7 +49,7 @@ export const performanceService = {
   /**
    * Get a single performance record.
    */
-  async getById(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async getById(docId, athleteId) {
     const snap = await getDoc(doc(db, COLLECTIONS.PERFORMANCE_RECORDS, docId))
     if (!snap.exists()) return null
     const data = snap.data()
@@ -61,7 +61,7 @@ export const performanceService = {
    * Create a new performance record.
    * @param {object} data - Performance fields (metric, value, notes, etc.)
    */
-  async create(data, athleteId = DEFAULT_ATHLETE_ID) {
+  async create(data, athleteId) {
     const ref = await addDoc(collection(db, COLLECTIONS.PERFORMANCE_RECORDS), {
       ...makeBaseFilters(athleteId),
       date: data.date || new Date().toISOString().slice(0, 10),
@@ -75,7 +75,7 @@ export const performanceService = {
   /**
    * Update an existing performance record.
    */
-  async update(docId, data, athleteId = DEFAULT_ATHLETE_ID) {
+  async update(docId, data, athleteId) {
     const record = await this.getById(docId, athleteId)
     if (!record) return null
 
@@ -89,7 +89,7 @@ export const performanceService = {
   /**
    * Delete a performance record.
    */
-  async delete(docId, athleteId = DEFAULT_ATHLETE_ID) {
+  async delete(docId, athleteId) {
     const record = await this.getById(docId, athleteId)
     if (record) {
       await deleteDoc(doc(db, COLLECTIONS.PERFORMANCE_RECORDS, docId))

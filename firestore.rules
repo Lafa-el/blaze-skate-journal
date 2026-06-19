@@ -21,10 +21,16 @@ service cloud.firestore {
     }
 
     match /athletes/{docId} {
-      allow create: if ownsIncomingAthleteData();
-      allow read, delete: if ownsExistingAthleteData();
-      allow update: if ownsExistingAthleteData()
-        && ownsIncomingAthleteData()
+      allow create: if signedIn()
+        && request.auth.uid == docId
+        && request.resource.data.athleteId == docId;
+      allow read, delete: if signedIn()
+        && request.auth.uid == docId
+        && resource.data.athleteId == docId;
+      allow update: if signedIn()
+        && request.auth.uid == docId
+        && resource.data.athleteId == docId
+        && request.resource.data.athleteId == docId
         && keepsAthleteOwnerStable();
     }
 

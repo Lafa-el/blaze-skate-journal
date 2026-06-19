@@ -2,14 +2,46 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { athleteService } from '../services/athleteService'
-import { doc, updateDoc } from 'firebase/firestore'
-import { db } from '../firebase/firestore'
 import { auth } from '../firebase/auth'
 import { updateProfile as firebaseUpdateProfile } from 'firebase/auth'
 import { ArrowLeft, Save, Loader2, User, Camera } from 'lucide-react'
 import { useLanguage } from '../i18n'
 
 const MAX_BIO_LENGTH = 500
+const PROFILE_MEANINGFUL_FIELDS = ['bio', 'level', 'avatarUrl', 'skatingFrom', 'birthday']
+
+function hasDisplayName(profile, uid) {
+  const displayName = profile.data?.displayName?.trim()
+  return Boolean(displayName && displayName !== uid)
+}
+
+function meaningfulFieldCount(profile) {
+  return PROFILE_MEANINGFUL_FIELDS.reduce((count, field) => (
+    profile.data?.[field] ? count + 1 : count
+  ), 0)
+}
+
+function updatedAtMs(profile) {
+  const value = profile.data?.updatedAt || profile.data?.createdAt || ''
+  const time = Date.parse(value)
+  return Number.isNaN(time) ? 0 : time
+}
+
+function chooseBestLegacyProfile(profiles, uid) {
+  return [...profiles].sort((a, b) => {
+    const displayNameScore = Number(hasDisplayName(b, uid)) - Number(hasDisplayName(a, uid))
+    if (displayNameScore !== 0) return displayNameScore
+
+    const meaningfulScore = meaningfulFieldCount(b) - meaningfulFieldCount(a)
+    if (meaningfulScore !== 0) return meaningfulScore
+
+    return updatedAtMs(b) - updatedAtMs(a)
+  })[0] || null
+}
+
+function profileDataForForm(profile) {
+  return profile?.data || {}
+}
 
 export default function EditProfile() {
   const navigate = useNavigate()
@@ -34,25 +66,36 @@ export default function EditProfile() {
       setLoading(true)
       setError('')
       try {
+        if (!user?.uid) {
+          setLoading(false)
+          return
+        }
+
         if (user?.displayName) setDisplayName(user.displayName)
         if (user?.photoURL) setAvatarUrl(user.photoURL)
 
-        // Use athleteService.get to find the athlete doc by UID (stored as athleteId)
-        const athlete = await athleteService.get(user?.uid || 'default')
-        if (athlete) {
-          const data = athlete.data
-          setBio(data.bio || '')
-          setLevel(data.level || '')
-          if (data.avatarUrl) setAvatarUrl(data.avatarUrl)
-          if (data.skatingFrom) setSkatingFrom(data.skatingFrom)
-          if (data.birthday) setBirthday(data.birthday)
-          // Store the Firestore doc ID so we can update it later
-          window.__athleteDocId = athlete.docId
-        } else {
-          // Create an athlete record if it doesn't exist
-          const result = await athleteService.createOrUpdate(user?.uid || 'default')
-          window.__athleteDocId = result
+        let athlete = await athleteService.getAthleteProfile(user.uid)
+        if (!athlete) {
+          let legacyProfiles = []
+          try {
+            legacyProfiles = await athleteService.getLegacyAthleteProfilesByAthleteId(user.uid)
+          } catch (legacyError) {
+            console.warn('[EditProfile] Legacy profile lookup failed:', legacyError)
+          }
+          const bestLegacyProfile = chooseBestLegacyProfile(legacyProfiles, user.uid)
+          const seedData = bestLegacyProfile?.data || {
+            displayName: user.displayName || user.email?.split('@')[0] || user.uid,
+          }
+          await athleteService.upsertAthleteProfile(user.uid, seedData)
+          athlete = await athleteService.getAthleteProfile(user.uid)
         }
+
+        const data = profileDataForForm(athlete)
+        setBio(data.bio || '')
+        setLevel(data.level || '')
+        if (data.avatarUrl) setAvatarUrl(data.avatarUrl)
+        if (data.skatingFrom) setSkatingFrom(data.skatingFrom)
+        if (data.birthday) setBirthday(data.birthday)
       } catch (e) {
         setError(t('editProfile.failedLoad') + ': ' + e.message)
         console.error('[EditProfile] Load error:', e)
@@ -80,6 +123,10 @@ export default function EditProfile() {
     }
     if (bio.length > MAX_BIO_LENGTH) {
       setError(t('editProfile.bioMaxLength'))
+      return
+    }
+    if (!user?.uid) {
+      setError(t('editProfile.failedSave'))
       return
     }
 
@@ -116,9 +163,7 @@ export default function EditProfile() {
       if (skatingFrom) firestoreUpdates.skatingFrom = skatingFrom
       if (birthday) firestoreUpdates.birthday = birthday
 
-      // Use the stored doc ID, fallback to user.uid
-      const docId = window.__athleteDocId || user.uid
-      await updateDoc(doc(db, 'athletes', docId), firestoreUpdates)
+      await athleteService.upsertAthleteProfile(user.uid, firestoreUpdates)
 
       navigate('/settings')
     } catch (e) {
