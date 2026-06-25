@@ -50,6 +50,10 @@ check('builds a journal day payload with metadata', () => {
     date: '2026-06-25',
     dayType: 'training',
     overallFeeling: 4,
+    energy: '5',
+    soreness: 'left ankle',
+    trainingFocus: 'corner exits',
+    coachFeedback: 'Lower stance',
     lindsayReflection: { bestThing: 'Strong edges today' },
     parentNote: 'Good focus',
     isCompleted: false,
@@ -58,7 +62,15 @@ check('builds a journal day payload with metadata', () => {
   assert.equal(payload.date, '2026-06-25')
   assert.equal(payload.dayType, 'training')
   assert.equal(payload.overallFeeling, 4)
-  assert.deepEqual(payload.lindsayReflection, { bestThing: 'Strong edges today' })
+  assert.equal(payload.energy, 5)
+  assert.equal(payload.soreness, 'left ankle')
+  assert.equal(payload.trainingFocus, 'corner exits')
+  assert.equal(payload.coachFeedback, 'Lower stance')
+  assert.deepEqual(payload.lindsayReflection, {
+    bestThing: 'Strong edges today',
+    needsWork: '',
+    tomorrowFocus: '',
+  })
   assert.equal(payload.parentNote, 'Good focus')
   assert.equal(payload.isCompleted, false)
   assert.equal(payload.athleteId, 'athlete-smoke')
@@ -66,6 +78,26 @@ check('builds a journal day payload with metadata', () => {
   assert.equal(payload.schemaVersion, 'skatingx-journal-v1')
   assert.equal(payload.createdAt, '2026-06-25T12:00:00.000Z')
   assert.equal(payload.updatedAt, '2026-06-25T12:00:00.000Z')
+})
+
+check('builds Daily defaults compatible with old journal data', () => {
+  const payload = buildJournalDayPayload({
+    date: '2026-06-25',
+    dayType: 'training',
+    overallFeeling: 3,
+    parentNote: '',
+    isCompleted: false,
+  }, createContext)
+
+  assert.equal(payload.energy, 3)
+  assert.equal(payload.soreness, '')
+  assert.equal(payload.trainingFocus, '')
+  assert.equal(payload.coachFeedback, '')
+  assert.deepEqual(payload.lindsayReflection, {
+    bestThing: '',
+    needsWork: '',
+    tomorrowFocus: '',
+  })
 })
 
 check('builds a training session payload with normalized basics', () => {
@@ -158,7 +190,20 @@ check('falls back invalid date fields to context date', () => {
   assert.equal(session.date, '2026-06-25')
 })
 
-check('builds update payloads without createdAt', () => {
+check('builds Daily update payloads without createdAt', () => {
+  const daily = buildJournalDayPayload({
+    date: '2026-06-25',
+    createdAt: '2020-01-01T00:00:00.000Z',
+    updatedAt: '2020-01-01T00:00:00.000Z',
+    dayType: 'training',
+  }, updateContext)
+
+  assert.equal(daily.athleteId, 'athlete-smoke')
+  assert.equal(daily.updatedAt, '2026-06-26T12:00:00.000Z')
+  assert.equal(Object.hasOwn(daily, 'createdAt'), false)
+})
+
+check('builds training update payloads without createdAt', () => {
   const payload = buildTrainingSessionPayload({
     date: '2026-06-25',
     createdAt: '2020-01-01T00:00:00.000Z',

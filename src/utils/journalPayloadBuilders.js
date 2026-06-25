@@ -76,6 +76,20 @@ function normalizeArray(value) {
   return Array.isArray(value) ? value : []
 }
 
+function normalizeText(value, fallback = '') {
+  return typeof value === 'string' ? value : fallback
+}
+
+function normalizeReflection(value) {
+  const reflection = value && typeof value === 'object' ? value : {}
+
+  return {
+    bestThing: normalizeText(reflection.bestThing),
+    needsWork: normalizeText(reflection.needsWork),
+    tomorrowFocus: normalizeText(reflection.tomorrowFocus),
+  }
+}
+
 export function buildJournalDayPayload(input = {}, context = {}) {
   const data = cleanInput(input)
 
@@ -83,6 +97,11 @@ export function buildJournalDayPayload(input = {}, context = {}) {
     ...data,
     date: validDateOrFallback(data.date, context),
     overallFeeling: normalizeIntegerInRange(data.overallFeeling, 3, 1, 5),
+    energy: normalizeIntegerInRange(data.energy, 3, 1, 5),
+    soreness: normalizeText(data.soreness),
+    trainingFocus: normalizeText(data.trainingFocus),
+    coachFeedback: normalizeText(data.coachFeedback),
+    lindsayReflection: normalizeReflection(data.lindsayReflection),
     ...metadata(context),
   }
 }
