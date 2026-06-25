@@ -18,6 +18,8 @@ import { requireUid } from '../utils/validation'
 import { sessionService } from './sessionService'
 import { coachNoteService } from './coachNoteService'
 import { performanceService } from './performanceService'
+import { journalService } from './journalService'
+import { buildWeeklySummary } from '../utils/journalAggregations'
 
 /**
  * Helper to derive a stable document ID for a weekly review.
@@ -183,18 +185,29 @@ export const weeklyReviewService = {
    */
   async autoGenerateStats(weekStartStr, athleteId) {
     requireUid(athleteId, 'weeklyReviewService.autoGenerateStats')
-    const [sessions, topTechnicalIssues, topCoachNotes, bestPerformances] = await Promise.all([
+    const weekEnd = new Date(weekStartStr + 'T00:00:00')
+    weekEnd.setDate(weekEnd.getDate() + 6)
+    const weekEndStr = weekEnd.toISOString().slice(0, 10)
+    const [sessions, topTechnicalIssues, topCoachNotes, bestPerformances, allDailyLogs] = await Promise.all([
       aggregateSessions(weekStartStr, athleteId),
       aggregateTopTechnicalIssues(weekStartStr, athleteId),
       aggregateTopCoachNotes(weekStartStr, athleteId),
       aggregateBestPerformance(weekStartStr, athleteId),
+      journalService.list(athleteId, 'date', 30),
     ])
+    const weeklySummary = buildWeeklySummary({
+      startDate: weekStartStr,
+      endDate: weekEndStr,
+      days: allDailyLogs,
+      sessions: sessions.weekSessions,
+    })
 
     return {
       ...sessions,
       topTechnicalIssues,
       topCoachNotes,
       bestPerformances,
+      weeklySummary,
     }
   },
 

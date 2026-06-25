@@ -2,6 +2,13 @@ import assert from 'node:assert/strict'
 
 import { getWeekStart, isValidDateString } from '../src/utils/dateUtils.js'
 import {
+  buildCalendarDaySummary,
+  buildWeeklySummary,
+  getDateRangeDays,
+  summarizeDailyLogsByDate,
+  summarizeSessionsByDate,
+} from '../src/utils/journalAggregations.js'
+import {
   buildBodyStatusPayload,
   buildCoachNotePayload,
   buildJournalDayPayload,
@@ -43,6 +50,16 @@ check('calculates Monday week starts', () => {
   assert.equal(getWeekStart('2026-06-22'), '2026-06-22')
   assert.equal(getWeekStart('2026-06-25'), '2026-06-22')
   assert.equal(getWeekStart('2026-06-28'), '2026-06-22')
+})
+
+check('builds date range days inclusively', () => {
+  assert.deepEqual(getDateRangeDays('2026-06-22', '2026-06-25'), [
+    '2026-06-22',
+    '2026-06-23',
+    '2026-06-24',
+    '2026-06-25',
+  ])
+  assert.deepEqual(getDateRangeDays('bad-date', '2026-06-25'), [])
 })
 
 check('builds a journal day payload with metadata', () => {
@@ -318,6 +335,91 @@ check('aggregates a minimal weekly review sample', () => {
   assert.deepEqual(result.topTechnicalIssues[0], { tag: 'edges', count: 2 })
   assert.equal(result.topCoachNotes[0].priority, 'high')
   assert.deepEqual(result.bestPerformances, [{ event: '500m', time: 50.9 }])
+})
+
+check('summarizes sessions and daily logs by date', () => {
+  const sessionMap = summarizeSessionsByDate([
+    { date: '2026-06-25', sessionType: 'ice', durationMinutes: 60 },
+    { data: { date: '2026-06-25', sessionType: 'dryland', durationMinutes: 45 } },
+  ])
+  const dailyMap = summarizeDailyLogsByDate([
+    { date: '2026-06-25', isCompleted: true },
+    { data: { date: '2026-06-26', isCompleted: false } },
+  ])
+
+  assert.equal(sessionMap['2026-06-25'].length, 2)
+  assert.equal(dailyMap['2026-06-25'].data.isCompleted, true)
+  assert.equal(dailyMap['2026-06-26'].data.isCompleted, false)
+})
+
+check('builds calendar day summaries with daily and sessions', () => {
+  const summary = buildCalendarDaySummary({
+    date: '2026-06-25',
+    days: [
+      { date: '2026-06-25', isCompleted: true, trainingFocus: 'corner exits', energy: 4 },
+    ],
+    sessions: [
+      { date: '2026-06-25', sessionType: 'ice', durationMinutes: 60, technicalFocus: 'starts' },
+      { date: '2026-06-25', sessionType: 'dryland', durationMinutes: 45, notes: 'core' },
+    ],
+  })
+
+  assert.equal(summary.hasDaily, true)
+  assert.equal(summary.dailyCompleted, true)
+  assert.equal(summary.sessionCount, 2)
+  assert.equal(summary.totalTrainingMinutes, 105)
+  assert.deepEqual(summary.sessionTypes, ['ice', 'dryland'])
+  assert.deepEqual(summary.focusSummary, ['corner exits', 'starts', 'core'])
+})
+
+check('builds empty day calendar summaries', () => {
+  const summary = buildCalendarDaySummary({
+    date: '2026-06-25',
+    days: [],
+    sessions: [],
+  })
+
+  assert.equal(summary.hasDaily, false)
+  assert.equal(summary.sessionCount, 0)
+  assert.equal(summary.totalTrainingMinutes, 0)
+  assert.deepEqual(summary.sessionTypes, [])
+  assert.deepEqual(summary.focusSummary, [])
+})
+
+check('builds weekly summaries with missing daily logs', () => {
+  const summary = buildWeeklySummary({
+    startDate: '2026-06-22',
+    endDate: '2026-06-28',
+    days: [
+      { date: '2026-06-22', isCompleted: true, energy: 4, soreness: 'calves', trainingFocus: 'starts' },
+      { date: '2026-06-24', isCompleted: false, energy: 2, soreness: 'hips', trainingFocus: 'corners' },
+    ],
+    sessions: [
+      { date: '2026-06-22', sessionType: 'ice', durationMinutes: 60, technicalFocus: 'starts' },
+      { date: '2026-06-23', sessionType: 'dryland', durationMinutes: 45, focusTags: ['core'] },
+      { date: '2026-06-29', sessionType: 'ice', durationMinutes: 90 },
+    ],
+  })
+
+  assert.equal(summary.trainingDays, 2)
+  assert.equal(summary.sessionCount, 2)
+  assert.equal(summary.totalTrainingMinutes, 105)
+  assert.deepEqual(summary.sessionTypeCounts, {
+    ice: 1,
+    dryland: 1,
+    race: 0,
+    recovery: 0,
+  })
+  assert.equal(summary.averageEnergy, 3)
+  assert.deepEqual(summary.sorenessNotes, ['calves', 'hips'])
+  assert.deepEqual(summary.topTechnicalFocus[0], { focus: 'starts', count: 2 })
+  assert.deepEqual(summary.missingDailyLogs, [
+    '2026-06-23',
+    '2026-06-25',
+    '2026-06-26',
+    '2026-06-27',
+    '2026-06-28',
+  ])
 })
 
 console.log(`Journal smoke checks passed: ${checks.length}`)

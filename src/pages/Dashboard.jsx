@@ -2,9 +2,11 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, CalendarDays, Clock, TrendingUp, Target, Video, PenLine, HeartPulse, BarChart3, Tent, Settings } from 'lucide-react'
 import { sessionService } from '../services/sessionService'
+import { journalService } from '../services/journalService'
 import { athleteService } from '../services/athleteService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'
+import { buildWeeklySummary } from '../utils/journalAggregations'
 
 /** Get Monday of the week for a given YYYY-MM-DD string */
 function getWeekStart(dateStr) {
@@ -56,9 +58,10 @@ function calcStreak(sessionDates) {
 export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
   const uid = user?.uid
   const [sessions, setSessions] = useState([])
+  const [journalDays, setJournalDays] = useState([])
   const [loading, setLoading] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState('')
   const [birthday, setBirthday] = useState('')
@@ -93,8 +96,12 @@ export default function Dashboard() {
     if (!uid) return
     setLoading(true)
     try {
-      const all = await sessionService.list(uid, 'date')
+      const [all, days] = await Promise.all([
+        sessionService.list(uid, 'date'),
+        journalService.list(uid, 'date', 30),
+      ])
       setSessions(all)
+      setJournalDays(days)
     } catch (e) {
       console.error('[Dashboard] Failed to load:', e)
     } finally {
@@ -175,6 +182,12 @@ export default function Dashboard() {
   const skatingDuration = getSkatingDuration()
 
   const weekStart = useMemo(() => getWeekStart(new Date().toISOString().slice(0, 10)), [])
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const last7Start = useMemo(() => {
+    const date = new Date(todayStr + 'T00:00:00')
+    date.setDate(date.getDate() - 6)
+    return date.toISOString().slice(0, 10)
+  }, [todayStr])
 
   const weekSessions = useMemo(
     () => sessions.filter(s => isDateInWeek(s.data.date || s.data.createdAt?.slice(0, 10), weekStart)),
@@ -195,6 +208,30 @@ export default function Dashboard() {
     return sorted.slice(0, 5)
   }, [sessions])
 
+  const recentDaily = useMemo(() => {
+    const sorted = [...journalDays].sort((a, b) => {
+      const da = (b.data.date || b.data.createdAt || '').slice(0, 10)
+      const db2 = (a.data.date || a.data.createdAt || '').slice(0, 10)
+      return da.localeCompare(db2)
+    })
+    return sorted[0] || null
+  }, [journalDays])
+
+  const todayDaily = useMemo(
+    () => journalDays.find(day => day.data.date === todayStr) || null,
+    [journalDays, todayStr],
+  )
+
+  const last7Summary = useMemo(
+    () => buildWeeklySummary({
+      startDate: last7Start,
+      endDate: todayStr,
+      days: journalDays,
+      sessions,
+    }),
+    [journalDays, last7Start, sessions, todayStr],
+  )
+
   const sessionDates = useMemo(
     () => sessions.map(s => (s.data.date || s.data.createdAt || '').slice(0, 10)),
     [sessions],
@@ -214,10 +251,11 @@ export default function Dashboard() {
     const diff = Math.round((today - d) / (1000 * 60 * 60 * 24))
     if (diff === 0) return t('common.today')
     if (diff === 1) return t('common.yesterday')
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    return d.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })
   }
 
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const dayNames = t('calendar.dayNames')
+  const recentDailyFocus = recentDaily?.data?.trainingFocus || recentDaily?.data?.lindsayReflection || recentDaily?.data?.parentNote || ''
 
   return (
     <div className="p-4 space-y-6">
@@ -288,6 +326,44 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Review Summary */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">{t('dashboard.last7Days')}</h2>
+          <Link to="/calendar" className="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+            {t('dashboard.viewHistory')}
+          </Link>
+        </div>
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <div>
+            <p className="text-xs text-gray-400">{t('dashboard.trainingDays')}</p>
+            <p className="text-xl font-bold text-gray-900">{last7Summary.trainingDays}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">{t('dashboard.sessions')}</p>
+            <p className="text-xl font-bold text-gray-900">{last7Summary.sessionCount}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400">{t('dashboard.minutes')}</p>
+            <p className="text-xl font-bold text-gray-900">{last7Summary.totalTrainingMinutes}</p>
+          </div>
+        </div>
+        {!todayDaily && (
+          <Link
+            to="/daily"
+            className="block rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
+          >
+            {t('dashboard.todayDailyPrompt')}
+          </Link>
+        )}
+        {recentDaily && (
+          <p className="text-xs text-gray-500 mt-3">
+            {t('dashboard.recentDaily')}: {recentDaily.data.date}
+            {recentDailyFocus ? ` · ${recentDailyFocus}` : ''}
+          </p>
+        )}
+      </div>
+
       {/* Quick Links */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('dashboard.quickAccess')}</h2>
@@ -329,7 +405,7 @@ export default function Dashboard() {
                   <div className="w-2 h-2 rounded-full bg-indigo-400 mt-2 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">
-                      {s.sessionLabel || `${s.sessionType.charAt(0).toUpperCase() + s.sessionType.slice(1)} Session`}
+                      {s.sessionLabel || `${t(`sessions.sessionTypeOptions.${s.sessionType}`)} ${t('common.session')}`}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {s.focusTags && s.focusTags.length > 0

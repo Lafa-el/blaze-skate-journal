@@ -2,6 +2,8 @@ import {
   collection,
   query,
   where,
+  orderBy,
+  limit,
   getDocs,
   getDoc,
   addDoc,
@@ -15,6 +17,25 @@ import { buildJournalDayPayload } from '../utils/journalPayloadBuilders'
 import { requireUid } from '../utils/validation'
 
 export const journalService = {
+  /**
+   * Get journal day documents for the athlete.
+   * @param {string} athleteId
+   * @param {string} [sortBy] - 'date' or 'createdAt' (default 'date')
+   * @param {number} [limitCount]
+   */
+  async list(athleteId, sortBy = 'date', limitCount = null) {
+    requireUid(athleteId, 'journalService.list')
+    let q = query(
+      collection(db, COLLECTIONS.JOURNAL_DAYS),
+      where('athleteId', '==', athleteId),
+      orderBy(sortBy, 'desc'),
+    )
+    if (limitCount) q = query(q, limit(limitCount))
+
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map((d) => ({ docId: d.id, data: d.data() }))
+  },
+
   /**
    * Get today's journal day document.
    * @param {string} [dateStr] - YYYY-MM-DD, defaults to today

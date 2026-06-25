@@ -1,15 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Calendar as CalendarIcon, Clock, MapPin, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { sessionService } from '../services/sessionService'
+import { journalService } from '../services/journalService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'
+import {
+  buildCalendarDaySummary,
+  summarizeDailyLogsByDate,
+  summarizeSessionsByDate,
+} from '../utils/journalAggregations'
 
 export default function Calendar() {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [sessions, setSessions] = useState([])
+  const [journalDays, setJournalDays] = useState([])
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date()
     return { year: now.getFullYear(), month: now.getMonth() } // month is 0-indexed
@@ -20,38 +27,44 @@ export default function Calendar() {
   const dayNames = t('calendar.dayNames')
 
   // Load sessions for the current month
-  const loadSessions = async () => {
+  const loadMonthData = useCallback(async () => {
     setError('')
     if (!user) return
     setLoading(true)
     try {
-      // Fetch sessions sorted by date descending
-      const all = await sessionService.list(user.uid, 'date', 100)
+      const [allSessions, allJournalDays] = await Promise.all([
+        sessionService.list(user.uid, 'date', 100),
+        journalService.list(user.uid, 'date', 100),
+      ])
       // Filter to sessions within the displayed month
       const { year, month } = currentMonth
       const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`
       const nextMonth = month === 11 ? `${year + 1}-01-01` : `${year}-${String(month + 2).padStart(2, '0')}-01`
 
-      const monthSessions = all.filter(s => {
+      const monthSessions = allSessions.filter(s => {
         const d = s.data.date || s.data.createdAt?.slice(0, 10)
+        return d >= monthStart && d < nextMonth
+      })
+      const monthJournalDays = allJournalDays.filter(day => {
+        const d = day.data.date || day.data.createdAt?.slice(0, 10)
         return d >= monthStart && d < nextMonth
       })
       // Sort by date ascending for display
       monthSessions.sort((a, b) => (a.data.date || '').localeCompare(b.data.date || ''))
+      monthJournalDays.sort((a, b) => (a.data.date || '').localeCompare(b.data.date || ''))
       setSessions(monthSessions)
+      setJournalDays(monthJournalDays)
     } catch (e) {
       setError(t('calendar.failedLoad'))
       console.error('[Calendar] Failed to load:', e)
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentMonth, t, user])
 
   useEffect(() => {
-    if (!user) return
-    loadSessions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, currentMonth])
+    loadMonthData()
+  }, [loadMonthData])
 
   const goToPrevMonth = () => {
     const { year, month } = currentMonth
@@ -88,16 +101,14 @@ export default function Calendar() {
   const today = new Date()
   const todayStr = today.toISOString().slice(0, 10)
 
-  // Group sessions by date for the calendar
-  const sessionsByDate = {}
-  sessions.forEach(s => {
-    const d = s.data.date || s.data.createdAt?.slice(0, 10)
-    if (!sessionsByDate[d]) sessionsByDate[d] = []
-    sessionsByDate[d].push(s)
-  })
+  const sessionsByDate = useMemo(() => summarizeSessionsByDate(sessions), [sessions])
+  const journalDaysByDate = useMemo(() => summarizeDailyLogsByDate(journalDays), [journalDays])
 
   // Sessions for selected date
   const selectedDateSessions = selectedDate ? (sessionsByDate[selectedDate] || []) : []
+  const selectedDateSummary = selectedDate
+    ? buildCalendarDaySummary({ date: selectedDate, days: journalDays, sessions })
+    : null
 
   // Session type colors
   const sessionTypeColor = (type) => {
@@ -115,7 +126,7 @@ export default function Calendar() {
   const formatDateLabel = (dateStr) => {
     if (!dateStr) return ''
     const d = new Date(dateStr + 'T00:00:00')
-    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    return d.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' })
   }
 
   return (
@@ -170,24 +181,28 @@ export default function Calendar() {
             const dateStr = `${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
             const isToday = dateStr === todayStr
             const hasSession = sessionsByDate[dateStr] && sessionsByDate[dateStr].length > 0
+            const hasDaily = Boolean(journalDaysByDate[dateStr])
             const isSelected = dateStr === selectedDate
             return (
               <button
                 key={day}
-                onClick={() => setSelectedDate(hasSession ? dateStr : null)}
+                onClick={() => setSelectedDate(dateStr)}
                 className={`text-sm py-2 rounded-lg transition-colors ${
                   isToday
                     ? 'bg-primary text-white font-bold'
                     : isSelected
                       ? 'bg-indigo-100 text-indigo-700 font-bold ring-2 ring-indigo-300'
-                      : hasSession
+                      : hasSession || hasDaily
                         ? 'bg-indigo-50 text-indigo-700 font-medium hover:bg-indigo-100'
                         : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 {day}
-                {hasSession && !isToday && (
-                  <span className="block w-1 h-1 bg-indigo-400 rounded-full mx-auto mt-0.5" />
+                {(hasSession || hasDaily) && !isToday && (
+                  <span className="mt-0.5 flex justify-center gap-0.5">
+                    {hasDaily && <span className="block w-1 h-1 bg-emerald-400 rounded-full" />}
+                    {hasSession && <span className="block w-1 h-1 bg-indigo-400 rounded-full" />}
+                  </span>
                 )}
               </button>
             )
@@ -199,6 +214,42 @@ export default function Calendar() {
       {selectedDate && (
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-3">{formatDateLabel(selectedDate)}</h2>
+          {selectedDateSummary && (
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-gray-400">{t('calendar.dailyStatus')}</p>
+                  <p className="font-semibold text-gray-900">
+                    {selectedDateSummary.hasDaily
+                      ? selectedDateSummary.dailyCompleted
+                        ? t('calendar.dailyCompleted')
+                        : t('calendar.dailyStarted')
+                      : t('calendar.noDaily')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">{t('calendar.sessions')}</p>
+                  <p className="font-semibold text-gray-900">
+                    {selectedDateSummary.sessionCount} · {selectedDateSummary.totalTrainingMinutes} {t('common.minutes')}
+                  </p>
+                </div>
+              </div>
+              {selectedDateSummary.sessionTypes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {selectedDateSummary.sessionTypes.map((type) => (
+                    <span key={type} className={`text-xs font-medium px-2.5 py-1 rounded-full ${sessionTypeColor(type)}`}>
+                      {t(`sessions.sessionTypeOptions.${type}`)}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {selectedDateSummary.focusSummary.length > 0 && (
+                <p className="text-xs text-gray-500 mt-3">
+                  {t('calendar.focusSummary')}: {selectedDateSummary.focusSummary.join(' · ')}
+                </p>
+              )}
+            </div>
+          )}
           {selectedDateSessions.length > 0 ? (
             <div className="space-y-3">
               {selectedDateSessions.map((session) => {
@@ -211,14 +262,14 @@ export default function Calendar() {
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="font-semibold text-gray-900">
-                          {s.sessionLabel || `${s.sessionType.charAt(0).toUpperCase() + s.sessionType.slice(1)} ${t('calendar.session')}`}
+                          {s.sessionLabel || `${t(`sessions.sessionTypeOptions.${s.sessionType}`)} ${t('calendar.session')}`}
                         </p>
                         {s.coachName && (
                           <p className="text-sm text-gray-500">{s.coachName}</p>
                         )}
                       </div>
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${sessionTypeColor(s.sessionType)}`}>
-                        {s.sessionType.replace('_', ' ')}
+                        {t(`sessions.sessionTypeOptions.${s.sessionType}`)}
                       </span>
                     </div>
 
@@ -288,11 +339,11 @@ export default function Calendar() {
                     <div>
                       <p className="font-semibold text-gray-900">{s.date}</p>
                       <p className="text-sm text-gray-500">
-                        {s.sessionLabel || `${s.sessionType.charAt(0).toUpperCase() + s.sessionType.slice(1)}`}
+                        {s.sessionLabel || t(`sessions.sessionTypeOptions.${s.sessionType}`)}
                       </p>
                     </div>
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${sessionTypeColor(s.sessionType)}`}>
-                      {s.sessionType.replace('_', ' ')}
+                      {t(`sessions.sessionTypeOptions.${s.sessionType}`)}
                     </span>
                   </div>
                   <div className="space-y-1.5 text-sm text-gray-600">
@@ -325,7 +376,7 @@ export default function Calendar() {
       )}
 
       {/* Empty state */}
-      {!loading && sessions.length === 0 && !selectedDate && (
+      {!loading && sessions.length === 0 && journalDays.length === 0 && !selectedDate && (
         <div className="text-center py-8 text-gray-400">
           <Sparkles className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p className="text-sm">{t('calendar.noSessionsForMonth')} {monthNames[currentMonth.month]} {currentMonth.year}</p>
