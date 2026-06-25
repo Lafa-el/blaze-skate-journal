@@ -80,6 +80,18 @@ function normalizeText(value, fallback = '') {
   return typeof value === 'string' ? value : fallback
 }
 
+function normalizeBoolean(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (['true', '1', 'yes', 'y'].includes(normalized)) return true
+    if (['false', '0', 'no', 'n'].includes(normalized)) return false
+  }
+  return fallback
+}
+
 function normalizeReflection(value) {
   const reflection = value && typeof value === 'object' ? value : {}
 
@@ -112,9 +124,25 @@ export function buildTrainingSessionPayload(input = {}, context = {}) {
   return {
     ...data,
     date: validDateOrFallback(data.date, context),
+    sessionLabel: normalizeText(data.sessionLabel),
+    location: normalizeText(data.location),
     durationMinutes: normalizeNonNegativeNumber(data.durationMinutes, 0),
     intensity: normalizeIntegerInRange(data.intensity, 3, 1, 5),
     focusTags: normalizeArray(data.focusTags),
+    coachName: normalizeText(data.coachName),
+    notes: normalizeText(data.notes),
+    iceTimeMinutes: normalizeNonNegativeNumber(data.iceTimeMinutes, 0),
+    drylandMinutes: normalizeNonNegativeNumber(data.drylandMinutes, 0),
+    technicalFocus: normalizeText(data.technicalFocus),
+    mainSet: normalizeText(data.mainSet),
+    startsPractice: normalizeBoolean(data.startsPractice),
+    cornerFocus: normalizeBoolean(data.cornerFocus),
+    straightawayFocus: normalizeBoolean(data.straightawayFocus),
+    relayPractice: normalizeBoolean(data.relayPractice),
+    raceSimulation: normalizeBoolean(data.raceSimulation),
+    lapTimesNote: normalizeText(data.lapTimesNote),
+    equipmentNote: normalizeText(data.equipmentNote),
+    recoveryNote: normalizeText(data.recoveryNote),
     ...metadata(context),
   }
 }

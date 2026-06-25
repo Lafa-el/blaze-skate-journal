@@ -104,20 +104,75 @@ check('builds a training session payload with normalized basics', () => {
   const payload = buildTrainingSessionPayload({
     date: '2026-06-25',
     sessionType: 'ice',
+    sessionLabel: 'AM Ice',
+    location: 'Main rink',
     durationMinutes: '90',
     intensity: '4',
     focusTags: ['starts'],
     coachName: 'Coach',
+    iceTimeMinutes: '60',
+    drylandMinutes: '30',
+    technicalFocus: 'corner exits',
+    mainSet: '6x500m',
+    startsPractice: 'true',
+    cornerFocus: 1,
+    straightawayFocus: false,
+    relayPractice: 'false',
+    raceSimulation: true,
+    lapTimesNote: '51.2, 50.9',
+    equipmentNote: 'Check left blade',
+    recoveryNote: 'Stretch calves',
   }, createContext)
 
   assert.equal(payload.date, '2026-06-25')
   assert.equal(payload.sessionType, 'ice')
+  assert.equal(payload.sessionLabel, 'AM Ice')
+  assert.equal(payload.location, 'Main rink')
   assert.equal(payload.durationMinutes, 90)
   assert.equal(payload.intensity, 4)
   assert.deepEqual(payload.focusTags, ['starts'])
   assert.equal(payload.coachName, 'Coach')
+  assert.equal(payload.iceTimeMinutes, 60)
+  assert.equal(payload.drylandMinutes, 30)
+  assert.equal(payload.technicalFocus, 'corner exits')
+  assert.equal(payload.mainSet, '6x500m')
+  assert.equal(payload.startsPractice, true)
+  assert.equal(payload.cornerFocus, true)
+  assert.equal(payload.straightawayFocus, false)
+  assert.equal(payload.relayPractice, false)
+  assert.equal(payload.raceSimulation, true)
+  assert.equal(payload.lapTimesNote, '51.2, 50.9')
+  assert.equal(payload.equipmentNote, 'Check left blade')
+  assert.equal(payload.recoveryNote, 'Stretch calves')
   assert.equal(payload.createdAt, '2026-06-25T12:00:00.000Z')
   assert.equal(payload.updatedAt, '2026-06-25T12:00:00.000Z')
+})
+
+check('builds training session defaults compatible with old data', () => {
+  const payload = buildTrainingSessionPayload({
+    date: '2026-06-25',
+    sessionType: 'ice',
+  }, createContext)
+
+  assert.equal(payload.sessionLabel, '')
+  assert.equal(payload.location, '')
+  assert.equal(payload.durationMinutes, 0)
+  assert.equal(payload.intensity, 3)
+  assert.deepEqual(payload.focusTags, [])
+  assert.equal(payload.coachName, '')
+  assert.equal(payload.notes, '')
+  assert.equal(payload.iceTimeMinutes, 0)
+  assert.equal(payload.drylandMinutes, 0)
+  assert.equal(payload.technicalFocus, '')
+  assert.equal(payload.mainSet, '')
+  assert.equal(payload.startsPractice, false)
+  assert.equal(payload.cornerFocus, false)
+  assert.equal(payload.straightawayFocus, false)
+  assert.equal(payload.relayPractice, false)
+  assert.equal(payload.raceSimulation, false)
+  assert.equal(payload.lapTimesNote, '')
+  assert.equal(payload.equipmentNote, '')
+  assert.equal(payload.recoveryNote, '')
 })
 
 check('builds coach note, body status, performance, video, and weekly payloads', () => {
@@ -188,6 +243,28 @@ check('falls back invalid date fields to context date', () => {
 
   assert.equal(journal.date, '2026-06-25')
   assert.equal(session.date, '2026-06-25')
+})
+
+check('normalizes training duration, intensity, and boolean fields safely', () => {
+  const payload = buildTrainingSessionPayload({
+    date: '2026-06-25',
+    sessionType: 'ice',
+    durationMinutes: '-10',
+    intensity: '9',
+    iceTimeMinutes: 'bad',
+    drylandMinutes: '-4',
+    startsPractice: 'yes',
+    relayPractice: '0',
+    raceSimulation: 0,
+  }, createContext)
+
+  assert.equal(payload.durationMinutes, 0)
+  assert.equal(payload.intensity, 5)
+  assert.equal(payload.iceTimeMinutes, 0)
+  assert.equal(payload.drylandMinutes, 0)
+  assert.equal(payload.startsPractice, true)
+  assert.equal(payload.relayPractice, false)
+  assert.equal(payload.raceSimulation, false)
 })
 
 check('builds Daily update payloads without createdAt', () => {

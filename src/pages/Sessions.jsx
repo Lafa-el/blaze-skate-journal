@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Clock, Calendar, ChevronLeft, ChevronRight, Trash2, Edit3 } from 'lucide-react'
 import { sessionService } from '../services/sessionService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'
+import { isValidDateString } from '../utils/dateUtils'
 
 const sessionTypeKeys = ['ice', 'dryland', 'private_lesson', 'competition', 'recovery', 'rest']
 
@@ -13,75 +14,126 @@ const defaultFocusTags = [
   'jumps', 'spins', 'program', 'speed_work', 'endurance',
 ]
 
-export default function Sessions() {
-  const { user } = useAuth()
-  const { t } = useLanguage()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [sessions, setSessions] = useState([])
-  const [showForm, setShowForm] = useState(false)
-  const [editId, setEditId] = useState(null)
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
-  const [deleteConfirm, setDeleteConfirm] = useState(null)
+const shortTrackBooleanFields = [
+  'startsPractice',
+  'cornerFocus',
+  'straightawayFocus',
+  'relayPractice',
+  'raceSimulation',
+]
 
-  // Form state
-  const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
+function createDefaultSessionForm(date) {
+  return {
+    date,
     sessionType: 'ice',
     sessionLabel: '',
+    location: '',
     durationMinutes: '',
     intensity: 3,
     focusTags: [],
     coachName: '',
     notes: '',
-  })
+    iceTimeMinutes: '',
+    drylandMinutes: '',
+    technicalFocus: '',
+    mainSet: '',
+    startsPractice: false,
+    cornerFocus: false,
+    straightawayFocus: false,
+    relayPractice: false,
+    raceSimulation: false,
+    lapTimesNote: '',
+    equipmentNote: '',
+    recoveryNote: '',
+  }
+}
 
-  const loadSessions = async () => {
+function sessionFormFromData(data = {}, selectedDate) {
+  return {
+    ...createDefaultSessionForm(data.date || selectedDate),
+    date: data.date || selectedDate,
+    sessionType: data.sessionType || 'ice',
+    sessionLabel: data.sessionLabel || '',
+    location: data.location || '',
+    durationMinutes: data.durationMinutes ?? '',
+    intensity: data.intensity ?? 3,
+    focusTags: data.focusTags || [],
+    coachName: data.coachName || '',
+    notes: data.notes || '',
+    iceTimeMinutes: data.iceTimeMinutes ?? '',
+    drylandMinutes: data.drylandMinutes ?? '',
+    technicalFocus: data.technicalFocus || '',
+    mainSet: data.mainSet || '',
+    startsPractice: Boolean(data.startsPractice),
+    cornerFocus: Boolean(data.cornerFocus),
+    straightawayFocus: Boolean(data.straightawayFocus),
+    relayPractice: Boolean(data.relayPractice),
+    raceSimulation: Boolean(data.raceSimulation),
+    lapTimesNote: data.lapTimesNote || '',
+    equipmentNote: data.equipmentNote || '',
+    recoveryNote: data.recoveryNote || '',
+  }
+}
+
+export default function Sessions() {
+  const { user } = useAuth()
+  const { t } = useLanguage()
+  const [loadingSessions, setLoadingSessions] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
+  const [status, setStatus] = useState('')
+  const [sessions, setSessions] = useState([])
+  const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState(null)
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const selectedDateIsValid = isValidDateString(selectedDate)
+
+  // Form state
+  const [form, setForm] = useState(() => createDefaultSessionForm(new Date().toISOString().slice(0, 10)))
+  const formDateIsValid = isValidDateString(form.date)
+
+  const getSessionTypeLabel = (sessionType) => {
+    const key = sessionType || 'ice'
+    const label = t(`sessions.sessionTypeOptions.${key}`)
+    return label === `sessions.sessionTypeOptions.${key}` ? key.replace(/_/g, ' ') : label
+  }
+
+  const loadSessions = useCallback(async (dateOverride = selectedDate) => {
+    if (!user || !isValidDateString(dateOverride)) {
+      setSessions([])
+      return
+    }
     setError('')
+    setLoadingSessions(true)
     try {
       const all = await sessionService.list(user.uid, 'date')
-      const filtered = all.filter(s => s.data.date === selectedDate)
+      const filtered = all.filter(s => s.data.date === dateOverride)
       setSessions(filtered)
     } catch (e) {
       setError(t('sessions.failedLoadSessions'))
       console.error('[Sessions] Failed to load:', e)
+    } finally {
+      setLoadingSessions(false)
     }
-  }
+  }, [selectedDate, t, user])
 
   // Load sessions for selected date
   useEffect(() => {
-    if (!user) return
     loadSessions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, selectedDate])
+  }, [loadSessions])
 
-  const resetForm = () => {
-    setForm({
-      date: selectedDate,
-      sessionType: 'ice',
-      sessionLabel: '',
-      durationMinutes: '',
-      intensity: 3,
-      focusTags: [],
-      coachName: '',
-      notes: '',
-    })
+  const resetForm = (date = selectedDate) => {
+    setForm(createDefaultSessionForm(date))
     setEditId(null)
     setShowForm(false)
   }
 
   const startEdit = (session) => {
-    const d = session.data
-    setForm({
-      date: d.date || selectedDate,
-      sessionType: d.sessionType || 'ice',
-      sessionLabel: d.sessionLabel || '',
-      durationMinutes: d.durationMinutes || '',
-      intensity: d.intensity ?? 3,
-      focusTags: d.focusTags || [],
-      coachName: d.coachName || '',
-      notes: d.notes || '',
-    })
+    setError('')
+    setStatus('')
+    setForm(sessionFormFromData(session.data, selectedDate))
     setEditId(session.docId)
     setShowForm(true)
   }
@@ -97,52 +149,80 @@ export default function Sessions() {
     }))
   }
 
+  const toggleBooleanField = (field) => {
+    setForm(prev => ({ ...prev, [field]: !prev[field] }))
+  }
+
   const handleSave = async () => {
     if (!user) return
-    setLoading(true)
+    if (!formDateIsValid) {
+      setError(t('sessions.invalidDate'))
+      return
+    }
+    setSaving(true)
+    setError('')
+    setStatus('')
     try {
       const data = {
         ...form,
-        durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : 0,
       }
       if (editId) {
         await sessionService.update(editId, data, user.uid)
       } else {
         await sessionService.create(data, user.uid)
       }
-      resetForm()
-      await loadSessions()
-    } catch {
-      // Error handled by UI
+      setStatus(editId ? t('sessions.sessionUpdated') : t('sessions.sessionSaved'))
+      setSelectedDate(form.date)
+      resetForm(form.date)
+      await loadSessions(form.date)
+    } catch (e) {
+      setError(t('sessions.failedSaveSession'))
+      console.error('[Sessions] Failed to save:', e)
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
   }
 
   const handleDelete = async (docId) => {
     if (!user) return
+    setDeleting(true)
+    setError('')
+    setStatus('')
     try {
       await sessionService.delete(docId, user.uid)
       setDeleteConfirm(null)
+      setStatus(t('sessions.sessionDeleted'))
       await loadSessions()
-    } catch {
-      // Error handled by UI
+    } catch (e) {
+      setError(t('sessions.failedDeleteSession'))
+      console.error('[Sessions] Failed to delete:', e)
+    } finally {
+      setDeleting(false)
     }
   }
 
   const goToPrevDay = () => {
-    const d = new Date(selectedDate)
+    if (!selectedDateIsValid) {
+      setError(t('sessions.invalidDate'))
+      return
+    }
+    const d = new Date(selectedDate + 'T00:00:00')
     d.setDate(d.getDate() - 1)
     setSelectedDate(d.toISOString().slice(0, 10))
   }
 
   const goToNextDay = () => {
-    const d = new Date(selectedDate)
+    if (!selectedDateIsValid) {
+      setError(t('sessions.invalidDate'))
+      return
+    }
+    const d = new Date(selectedDate + 'T00:00:00')
     d.setDate(d.getDate() + 1)
     setSelectedDate(d.toISOString().slice(0, 10))
   }
 
   const formatDate = (dateStr) => {
+    if (!isValidDateString(dateStr)) return dateStr
     const d = new Date(dateStr + 'T00:00:00')
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
   }
@@ -164,6 +244,12 @@ export default function Sessions() {
         </div>
       )}
 
+      {status && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700">
+          {status}
+        </div>
+      )}
+
       {/* Date Navigator */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-3">
@@ -176,6 +262,23 @@ export default function Sessions() {
           </button>
         </div>
 
+        <div className="mb-3">
+          <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.date')}</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={10}
+            pattern="\d{4}-\d{2}-\d{2}"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            placeholder={t('sessions.datePlaceholder')}
+            className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+          />
+          <p className={`text-xs mt-1 ${selectedDateIsValid ? 'text-gray-400' : 'text-red-500'}`}>
+            {selectedDateIsValid ? t('sessions.dateHelp') : t('sessions.invalidDate')}
+          </p>
+        </div>
+
         {/* Day Summary */}
         <div className="flex items-center gap-4 text-sm text-gray-600">
           <span className="flex items-center gap-1">
@@ -186,8 +289,14 @@ export default function Sessions() {
         </div>
       </div>
 
+      {loadingSessions && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
+          {t('sessions.loadingSessions')}
+        </div>
+      )}
+
       {/* Session List */}
-      {sessions.length > 0 && (
+      {!loadingSessions && sessions.length > 0 && (
         <div className="space-y-3">
           {sessions.map((session) => {
             const s = session.data
@@ -197,10 +306,13 @@ export default function Sessions() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        {s.sessionLabel || `${s.sessionType.charAt(0).toUpperCase() + s.sessionType.slice(1)} ${t('common.session')}`}
+                        {s.sessionLabel || `${getSessionTypeLabel(s.sessionType)} ${t('common.session')}`}
                       </h3>
                       {s.coachName && (
                         <p className="text-sm text-gray-500 mt-0.5">{s.coachName}</p>
+                      )}
+                      {s.location && (
+                        <p className="text-xs text-gray-400 mt-0.5">{s.location}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-1">
@@ -221,7 +333,7 @@ export default function Sessions() {
 
                   <div className="flex flex-wrap gap-2 mb-3">
                     <span className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">
-                      {s.sessionType.replace('_', ' ')}
+                      {getSessionTypeLabel(s.sessionType)}
                     </span>
                     {s.intensity && (
                       <span className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-medium">
@@ -233,15 +345,32 @@ export default function Sessions() {
                         {s.durationMinutes} {t('common.minutes')}
                       </span>
                     )}
+                    {s.iceTimeMinutes > 0 && (
+                      <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">
+                        {t('sessions.iceTimeMinutes')}: {s.iceTimeMinutes}
+                      </span>
+                    )}
+                    {s.drylandMinutes > 0 && (
+                      <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">
+                        {t('sessions.drylandMinutes')}: {s.drylandMinutes}
+                      </span>
+                    )}
                   </div>
 
-                  {s.focusTags.length > 0 && (
+                  {(s.focusTags || []).length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
-                      {s.focusTags.map((tag) => (
+                      {(s.focusTags || []).map((tag) => (
                         <span key={tag} className="text-xs bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full">
                           #{tag}
                         </span>
                       ))}
+                    </div>
+                  )}
+
+                  {(s.technicalFocus || s.mainSet) && (
+                    <div className="text-sm text-gray-600 mb-2 space-y-1">
+                      {s.technicalFocus && <p>{t('sessions.technicalFocus')}: {s.technicalFocus}</p>}
+                      {s.mainSet && <p>{t('sessions.mainSet')}: {s.mainSet}</p>}
                     </div>
                   )}
 
@@ -255,10 +384,10 @@ export default function Sessions() {
         </div>
       )}
 
-      {sessions.length === 0 && !showForm && (
+      {!loadingSessions && sessions.length === 0 && !showForm && selectedDateIsValid && (
         <div className="text-center py-8 text-gray-400">
           <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">{t('calendar.noSessionsForDay')}</p>
+          <p className="text-sm">{t('sessions.noSessionsForDay')}</p>
         </div>
       )}
 
@@ -268,6 +397,30 @@ export default function Sessions() {
           <h3 className="font-semibold text-gray-900">
             {editId ? t('sessions.editSession') : t('sessions.addSession')}
           </h3>
+
+          {editId && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+              {t('sessions.editingSession')}
+            </div>
+          )}
+
+          {/* Session Date */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.date')}</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={10}
+              pattern="\d{4}-\d{2}-\d{2}"
+              value={form.date}
+              onChange={(e) => updateField('date', e.target.value)}
+              placeholder={t('sessions.datePlaceholder')}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+            />
+            {!formDateIsValid && (
+              <p className="text-xs text-red-500 mt-1">{t('sessions.invalidDate')}</p>
+            )}
+          </div>
 
           {/* Session Type */}
           <div>
@@ -301,6 +454,18 @@ export default function Sessions() {
             />
           </div>
 
+          {/* Location */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.location')}</label>
+            <input
+              type="text"
+              value={form.location}
+              onChange={(e) => updateField('location', e.target.value)}
+              placeholder={t('sessions.locationPlaceholder')}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+            />
+          </div>
+
           {/* Duration */}
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.duration')}</label>
@@ -311,6 +476,30 @@ export default function Sessions() {
               placeholder={t('sessions.durationPlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
+          </div>
+
+          {/* Short Track Minutes */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.iceTimeMinutes')}</label>
+              <input
+                type="number"
+                value={form.iceTimeMinutes}
+                onChange={(e) => updateField('iceTimeMinutes', e.target.value)}
+                placeholder={t('sessions.minutesPlaceholder')}
+                className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.drylandMinutes')}</label>
+              <input
+                type="number"
+                value={form.drylandMinutes}
+                onChange={(e) => updateField('drylandMinutes', e.target.value)}
+                placeholder={t('sessions.minutesPlaceholder')}
+                className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+              />
+            </div>
           </div>
 
           {/* Intensity */}
@@ -331,6 +520,86 @@ export default function Sessions() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Short Track Details */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.technicalFocus')}</label>
+            <input
+              type="text"
+              value={form.technicalFocus}
+              onChange={(e) => updateField('technicalFocus', e.target.value)}
+              placeholder={t('sessions.technicalFocusPlaceholder')}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.mainSet')}</label>
+            <input
+              type="text"
+              value={form.mainSet}
+              onChange={(e) => updateField('mainSet', e.target.value)}
+              placeholder={t('sessions.mainSetPlaceholder')}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-2 block">{t('sessions.shortTrackDetails')}</label>
+            <div className="grid grid-cols-2 gap-2">
+              {shortTrackBooleanFields.map((field) => (
+                <label
+                  key={field}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium ${
+                    form[field]
+                      ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-200 bg-gray-50 text-gray-600'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form[field])}
+                    onChange={() => toggleBooleanField(field)}
+                    className="accent-indigo-600"
+                  />
+                  {t(`sessions.booleanFields.${field}`)}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.lapTimesNote')}</label>
+            <textarea
+              value={form.lapTimesNote}
+              onChange={(e) => updateField('lapTimesNote', e.target.value)}
+              placeholder={t('sessions.lapTimesNotePlaceholder')}
+              rows={2}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.equipmentNote')}</label>
+            <textarea
+              value={form.equipmentNote}
+              onChange={(e) => updateField('equipmentNote', e.target.value)}
+              placeholder={t('sessions.equipmentNotePlaceholder')}
+              rows={2}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('sessions.recoveryNote')}</label>
+            <textarea
+              value={form.recoveryNote}
+              onChange={(e) => updateField('recoveryNote', e.target.value)}
+              placeholder={t('sessions.recoveryNotePlaceholder')}
+              rows={2}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
+            />
           </div>
 
           {/* Focus Tags */}
@@ -381,10 +650,10 @@ export default function Sessions() {
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              disabled={loading}
+              disabled={saving || !formDateIsValid}
               className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
             >
-              {loading ? t('common.saving') : (editId ? t('common.update') : t('sessions.saveSession'))}
+              {saving ? t('common.saving') : (editId ? t('common.update') : t('sessions.saveSession'))}
             </button>
             <button
               onClick={resetForm}
@@ -397,9 +666,17 @@ export default function Sessions() {
       ) : (
         <button
           onClick={() => {
-            setForm(prev => ({ ...prev, date: selectedDate }))
+            if (!selectedDateIsValid) {
+              setError(t('sessions.invalidDate'))
+              return
+            }
+            setError('')
+            setStatus('')
+            setForm(createDefaultSessionForm(selectedDate))
+            setEditId(null)
             setShowForm(true)
           }}
+          disabled={!selectedDateIsValid}
           className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
@@ -416,9 +693,10 @@ export default function Sessions() {
             <div className="flex gap-2">
               <button
                 onClick={() => handleDelete(deleteConfirm)}
+                disabled={deleting}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-lg"
               >
-                {t('common.delete')}
+                {deleting ? t('sessions.deletingSession') : t('common.delete')}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
