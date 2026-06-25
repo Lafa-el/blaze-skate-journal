@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Film, Plus, Trash2, Edit3, ExternalLink, Tag, Clock, FileVideo, X } from 'lucide-react'
 import { videoService } from '../services/videoService'
 import { useAuth } from '../contexts/AuthContext'
@@ -19,6 +19,7 @@ const TECHNICAL_TAG_OPTIONS = [
 export default function Videos() {
   const { user } = useAuth()
   const { t } = useLanguage()
+  const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [videos, setVideos] = useState([])
@@ -41,20 +42,15 @@ export default function Videos() {
     notes: '',
   })
 
-  // Load videos
-  useEffect(() => {
-    if (!user) return
-    loadVideos()
-  }, [user, selectedStatus, selectedSession])
-
-  const loadVideos = async () => {
+  const loadVideos = useCallback(async () => {
+    if (!uid) return
     setError('')
     try {
       setLoading(true)
       const filters = {}
       if (selectedStatus !== 'all') filters.analysisStatus = selectedStatus
       if (selectedSession !== 'all') filters.sessionId = selectedSession
-      const all = await videoService.list(filters, user.uid)
+      const all = await videoService.list(filters, uid)
       setVideos(all)
     } catch (e) {
       setError(t('videos.failedLoad'))
@@ -62,7 +58,12 @@ export default function Videos() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedSession, selectedStatus, t, uid])
+
+  // Load videos
+  useEffect(() => {
+    loadVideos()
+  }, [loadVideos])
 
   const resetForm = () => {
     setForm({
@@ -105,7 +106,7 @@ export default function Videos() {
   }
 
   const handleSave = async () => {
-    if (!user) return
+    if (!uid) return
     setLoading(true)
     try {
       const data = {
@@ -119,9 +120,9 @@ export default function Videos() {
       }
 
       if (editId) {
-        await videoService.update(editId, data, user.uid)
+        await videoService.update(editId, data, uid)
       } else {
-        await videoService.create(data, user.uid)
+        await videoService.create(data, uid)
       }
       resetForm()
       await loadVideos()
@@ -133,9 +134,9 @@ export default function Videos() {
   }
 
   const handleDelete = async (docId) => {
-    if (!user) return
+    if (!uid) return
     try {
-      await videoService.delete(docId, user.uid)
+      await videoService.delete(docId, uid)
       setDeleteConfirm(null)
       await loadVideos()
     } catch {

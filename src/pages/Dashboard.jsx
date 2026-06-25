@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, CalendarDays, Clock, TrendingUp, Target, Video, PenLine, HeartPulse, BarChart3, Tent, Settings } from 'lucide-react'
 import { sessionService } from '../services/sessionService'
@@ -57,6 +57,7 @@ export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const uid = user?.uid
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState('')
@@ -74,16 +75,10 @@ export default function Dashboard() {
     { path: '/summer-camp', label: t('dashboard.quickLinks.summerCamp'), desc: t('dashboard.quickLinks.summerCampDesc'), icon: Tent, color: 'bg-orange-500' },
   ]
 
-  useEffect(() => {
-    if (!user) return
-    loadSessions()
-    loadProfile()
-  }, [user])
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
-      if (!user?.uid) return
-      const athlete = await athleteService.getAthleteProfile(user.uid)
+      if (!uid) return
+      const athlete = await athleteService.getAthleteProfile(uid)
       if (athlete) {
         if (athlete.data?.avatarUrl) setAvatarUrl(athlete.data.avatarUrl)
         if (athlete.data?.birthday) setBirthday(athlete.data.birthday)
@@ -92,7 +87,25 @@ export default function Dashboard() {
     } catch (e) {
       console.error(`[Dashboard] ${t('dashboard.failedLoadProfile')}:`, e)
     }
-  }
+  }, [t, uid])
+
+  const loadSessions = useCallback(async () => {
+    if (!uid) return
+    setLoading(true)
+    try {
+      const all = await sessionService.list(uid, 'date')
+      setSessions(all)
+    } catch (e) {
+      console.error('[Dashboard] Failed to load:', e)
+    } finally {
+      setLoading(false)
+    }
+  }, [uid])
+
+  useEffect(() => {
+    loadSessions()
+    loadProfile()
+  }, [loadProfile, loadSessions])
 
   const getInitials = (name) => {
     if (!name) return 'U'
@@ -160,24 +173,6 @@ export default function Dashboard() {
   }
 
   const skatingDuration = getSkatingDuration()
-
-  useEffect(() => {
-    if (!user) return
-    loadSessions()
-  }, [user])
-
-  const loadSessions = async () => {
-    if (!user) return
-    setLoading(true)
-    try {
-      const all = await sessionService.list(user.uid, 'date')
-      setSessions(all)
-    } catch (e) {
-      console.error('[Dashboard] Failed to load:', e)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const weekStart = useMemo(() => getWeekStart(new Date().toISOString().slice(0, 10)), [])
 

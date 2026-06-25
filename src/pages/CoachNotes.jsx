@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Bookmark, Trash2, Flag, Edit3 } from 'lucide-react'
 import { coachNoteService } from '../services/coachNoteService'
 import { useAuth } from '../contexts/AuthContext'
@@ -19,6 +19,7 @@ const defaultTechnicalTags = [
 
 export default function CoachNotes() {
   const { user } = useAuth()
+  const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [notes, setNotes] = useState([])
@@ -37,22 +38,22 @@ export default function CoachNotes() {
     linkedSessionId: '',
   })
 
-  // Load notes
-  useEffect(() => {
-    if (!user) return
-    loadNotes()
-  }, [user])
-
-  const loadNotes = async () => {
+  const loadNotes = useCallback(async () => {
+    if (!uid) return
     setError('')
     try {
-      const all = await coachNoteService.list({}, user.uid)
+      const all = await coachNoteService.list({}, uid)
       setNotes(all)
     } catch (e) {
       setError('Failed to load coach notes. Check your connection or Firebase config.')
       console.error('[CoachNotes] Failed to load:', e)
     }
-  }
+  }, [uid])
+
+  // Load notes
+  useEffect(() => {
+    loadNotes()
+  }, [loadNotes])
 
   const resetForm = () => {
     setForm({
@@ -95,13 +96,13 @@ export default function CoachNotes() {
   }
 
   const handleSave = async () => {
-    if (!user) return
+    if (!uid) return
     setLoading(true)
     try {
       if (editId) {
-        await coachNoteService.update(editId, form, user.uid)
+        await coachNoteService.update(editId, form, uid)
       } else {
-        await coachNoteService.create(form, user.uid)
+        await coachNoteService.create(form, uid)
       }
       resetForm()
       await loadNotes()
@@ -113,9 +114,9 @@ export default function CoachNotes() {
   }
 
   const handleDelete = async (docId) => {
-    if (!user) return
+    if (!uid) return
     try {
-      await coachNoteService.delete(docId, user.uid)
+      await coachNoteService.delete(docId, uid)
       setDeleteConfirm(null)
       await loadNotes()
     } catch {

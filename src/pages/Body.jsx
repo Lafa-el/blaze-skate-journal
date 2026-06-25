@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { HeartPulse, Moon, Scale, Ruler, AlertTriangle, Smile, Trash2, ChevronLeft } from 'lucide-react'
 import { bodyStatusService } from '../services/bodyStatusService'
 import { useAuth } from '../contexts/AuthContext'
@@ -22,6 +22,7 @@ const sorenessAreas = [
 export default function Body() {
   const { user } = useAuth()
   const { t } = useLanguage()
+  const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [readings, setReadings] = useState([])
@@ -41,22 +42,22 @@ export default function Body() {
     mood: 3,
   })
 
-  // Load latest reading
-  useEffect(() => {
-    if (!user) return
-    loadReadings()
-  }, [user])
-
-  const loadReadings = async () => {
+  const loadReadings = useCallback(async () => {
+    if (!uid) return
     setError('')
     try {
-      const all = await bodyStatusService.list(user.uid, 7)
+      const all = await bodyStatusService.list(uid, 7)
       setReadings(all)
     } catch (e) {
       setError(t('body.failedLoad'))
       console.error('[Body] Failed to load:', e)
     }
-  }
+  }, [t, uid])
+
+  // Load latest reading
+  useEffect(() => {
+    loadReadings()
+  }, [loadReadings])
 
   const resetForm = () => {
     setForm({
@@ -101,7 +102,7 @@ export default function Body() {
   }
 
   const handleSave = async () => {
-    if (!user) return
+    if (!uid) return
     setLoading(true)
     try {
       const data = {
@@ -111,9 +112,9 @@ export default function Body() {
         heightCm: form.heightCm ? Number(form.heightCm) : 0,
       }
       if (editId) {
-        await bodyStatusService.update(editId, data, user.uid)
+        await bodyStatusService.update(editId, data, uid)
       } else {
-        await bodyStatusService.create(data, user.uid)
+        await bodyStatusService.create(data, uid)
       }
       resetForm()
       await loadReadings()
@@ -125,9 +126,9 @@ export default function Body() {
   }
 
   const handleDelete = async (docId) => {
-    if (!user) return
+    if (!uid) return
     try {
-      await bodyStatusService.delete(docId, user.uid)
+      await bodyStatusService.delete(docId, uid)
       setDeleteConfirm(null)
       await loadReadings()
     } catch {

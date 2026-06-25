@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Trophy, Plus, Trash2, ChevronLeft, Target } from 'lucide-react'
 import { performanceService } from '../services/performanceService'
 import { useAuth } from '../contexts/AuthContext'
@@ -17,6 +17,7 @@ const eventTypes = [
 export default function Performance() {
   const { user } = useAuth()
   const { t } = useLanguage()
+  const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [records, setRecords] = useState([])
@@ -36,22 +37,22 @@ export default function Performance() {
     notes: '',
   })
 
-  // Load records
-  useEffect(() => {
-    if (!user) return
-    loadRecords()
-  }, [user])
-
-  const loadRecords = async () => {
+  const loadRecords = useCallback(async () => {
+    if (!uid) return
     setError('')
     try {
-      const all = await performanceService.list({ metric: selectedEvent !== 'all' ? selectedEvent : undefined }, user.uid)
+      const all = await performanceService.list({ metric: selectedEvent !== 'all' ? selectedEvent : undefined }, uid)
       setRecords(all)
     } catch (e) {
       setError(t('performance.failedLoad'))
       console.error('[Performance] Failed to load:', e)
     }
-  }
+  }, [selectedEvent, t, uid])
+
+  // Load records
+  useEffect(() => {
+    loadRecords()
+  }, [loadRecords])
 
   const resetForm = () => {
     setForm({
@@ -102,11 +103,11 @@ export default function Performance() {
   }
 
   const handleSave = async () => {
-    if (!user) return
+    if (!uid) return
     setLoading(true)
     try {
       const timeNum = form.timeSeconds ? Number(form.timeSeconds) : 0
-      const allRecords = await performanceService.list({}, user.uid)
+      const allRecords = await performanceService.list({}, uid)
       const currentEvent = form.event
       const isPB = timeNum > 0 && allRecords.every(r => {
         const event = r.data.event || r.data.metric
@@ -126,9 +127,9 @@ export default function Performance() {
       }
 
       if (editId) {
-        await performanceService.update(editId, data, user.uid)
+        await performanceService.update(editId, data, uid)
       } else {
-        await performanceService.create(data, user.uid)
+        await performanceService.create(data, uid)
       }
       resetForm()
       await loadRecords()
@@ -140,9 +141,9 @@ export default function Performance() {
   }
 
   const handleDelete = async (docId) => {
-    if (!user) return
+    if (!uid) return
     try {
-      await performanceService.delete(docId, user.uid)
+      await performanceService.delete(docId, uid)
       setDeleteConfirm(null)
       await loadRecords()
     } catch {

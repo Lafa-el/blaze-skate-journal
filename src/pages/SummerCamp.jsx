@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Tent, Users, Calendar, Clock, Target,
   Flame, Trophy, ChevronRight,
@@ -39,6 +39,7 @@ function loadSavedDates() {
 export default function SummerCamp() {
   const { user } = useAuth()
   const { t } = useLanguage()
+  const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [campData, setCampData] = useState(null)
@@ -59,18 +60,12 @@ export default function SummerCamp() {
     }
   }, [campStart, campEnd])
 
-  // Load stats
-  useEffect(() => {
-    if (!user || !campStart || !campEnd) return
-    loadStats()
-  }, [user, campStart, campEnd])
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     setError('')
-    if (!user) return
+    if (!uid || !campStart || !campEnd) return
     setLoading(true)
     try {
-      const stats = await aggregateCampStats(campStart, campEnd, user.uid)
+      const stats = await aggregateCampStats(campStart, campEnd, uid)
       setCampData(stats)
     } catch (e) {
       setError(t('summerCamp.failedLoad'))
@@ -78,7 +73,12 @@ export default function SummerCamp() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [campEnd, campStart, t, uid])
+
+  // Load stats
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
 
   const handleSaveDates = () => {
     setCampStart(tempStart)

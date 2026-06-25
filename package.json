@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "smoke:journal": "node scripts/smoke-journal.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
