@@ -2,12 +2,30 @@ import assert from 'node:assert/strict'
 
 import { getWeekStart, isValidDateString } from '../src/utils/dateUtils.js'
 import {
-  aggregateWeeklyReviewSample,
-  buildJournalEntryPayload,
+  buildBodyStatusPayload,
+  buildCoachNotePayload,
+  buildJournalDayPayload,
+  buildPerformanceRecordPayload,
   buildTrainingSessionPayload,
+  buildVideoRefPayload,
+  buildWeeklyReviewPayload,
+} from '../src/utils/journalPayloadBuilders.js'
+import {
+  aggregateWeeklyReviewSample,
 } from '../src/utils/journalSmokeFixtures.js'
 
 const checks = []
+const createContext = {
+  athleteId: 'athlete-smoke',
+  sourceApp: 'blaze-skate-journal',
+  schemaVersion: 'skatingx-journal-v1',
+  nowIso: '2026-06-25T12:00:00.000Z',
+}
+const updateContext = {
+  ...createContext,
+  mode: 'update',
+  nowIso: '2026-06-26T12:00:00.000Z',
+}
 
 function check(name, fn) {
   fn()
@@ -27,33 +45,38 @@ check('calculates Monday week starts', () => {
   assert.equal(getWeekStart('2026-06-28'), '2026-06-22')
 })
 
-check('builds a journal entry payload with required basics', () => {
-  const payload = buildJournalEntryPayload({
+check('builds a journal day payload with metadata', () => {
+  const payload = buildJournalDayPayload({
     date: '2026-06-25',
     dayType: 'training',
     overallFeeling: 4,
-    lindsayReflection: 'Strong edges today',
+    lindsayReflection: { bestThing: 'Strong edges today' },
     parentNote: 'Good focus',
     isCompleted: false,
-  })
+  }, createContext)
 
   assert.equal(payload.date, '2026-06-25')
   assert.equal(payload.dayType, 'training')
   assert.equal(payload.overallFeeling, 4)
-  assert.equal(payload.lindsayReflection, 'Strong edges today')
+  assert.deepEqual(payload.lindsayReflection, { bestThing: 'Strong edges today' })
   assert.equal(payload.parentNote, 'Good focus')
   assert.equal(payload.isCompleted, false)
+  assert.equal(payload.athleteId, 'athlete-smoke')
+  assert.equal(payload.sourceApp, 'blaze-skate-journal')
+  assert.equal(payload.schemaVersion, 'skatingx-journal-v1')
+  assert.equal(payload.createdAt, '2026-06-25T12:00:00.000Z')
+  assert.equal(payload.updatedAt, '2026-06-25T12:00:00.000Z')
 })
 
-check('builds a training session payload with required basics', () => {
+check('builds a training session payload with normalized basics', () => {
   const payload = buildTrainingSessionPayload({
     date: '2026-06-25',
     sessionType: 'ice',
-    durationMinutes: 90,
-    intensity: 4,
+    durationMinutes: '90',
+    intensity: '4',
     focusTags: ['starts'],
     coachName: 'Coach',
-  })
+  }, createContext)
 
   assert.equal(payload.date, '2026-06-25')
   assert.equal(payload.sessionType, 'ice')
@@ -61,6 +84,91 @@ check('builds a training session payload with required basics', () => {
   assert.equal(payload.intensity, 4)
   assert.deepEqual(payload.focusTags, ['starts'])
   assert.equal(payload.coachName, 'Coach')
+  assert.equal(payload.createdAt, '2026-06-25T12:00:00.000Z')
+  assert.equal(payload.updatedAt, '2026-06-25T12:00:00.000Z')
+})
+
+check('builds coach note, body status, performance, video, and weekly payloads', () => {
+  const coachNote = buildCoachNotePayload({
+    date: '2026-06-25',
+    coachName: 'Coach A',
+    note: 'Improve starts',
+    priority: 'high',
+    technicalTags: ['starts'],
+  }, createContext)
+  assert.equal(coachNote.date, '2026-06-25')
+  assert.equal(coachNote.priority, 'high')
+  assert.deepEqual(coachNote.technicalTags, ['starts'])
+
+  const bodyStatus = buildBodyStatusPayload({
+    date: '2026-06-25',
+    sleepHours: '8.5',
+    fatigueLevel: '4',
+    mood: '5',
+    bodyWeightLb: '88',
+    heightCm: '142',
+  }, createContext)
+  assert.equal(bodyStatus.sleepHours, 8.5)
+  assert.equal(bodyStatus.fatigueLevel, 4)
+  assert.equal(bodyStatus.mood, 5)
+  assert.equal(bodyStatus.bodyWeightLb, 88)
+  assert.equal(bodyStatus.heightCm, 142)
+
+  const performanceRecord = buildPerformanceRecordPayload({
+    date: '2026-06-25',
+    event: '500m',
+    timeSeconds: '50.9',
+    metric: '500m',
+    value: '50.9',
+    isPB: true,
+  }, createContext)
+  assert.equal(performanceRecord.timeSeconds, 50.9)
+  assert.equal(performanceRecord.value, 50.9)
+  assert.equal(performanceRecord.isPB, true)
+
+  const videoRef = buildVideoRefPayload({
+    title: 'Start drill',
+    fileName: 'start.mp4',
+    externalUrl: 'https://example.com/start.mp4',
+    sessionId: 'session-1',
+    technicalTags: ['starts'],
+    analysisStatus: 'pending',
+  }, createContext)
+  assert.equal(videoRef.analysisStatus, 'pending')
+  assert.deepEqual(videoRef.technicalTags, ['starts'])
+
+  const weeklyReview = buildWeeklyReviewPayload({
+    weekStart: '2026-06-25',
+    iceSessions: '2',
+    drylandSessions: '1',
+    privateLessons: '1',
+    totalTrainingMinutes: '165',
+    bestMoment: 'Strong final lap',
+  }, createContext)
+  assert.equal(weeklyReview.weekStart, '2026-06-22')
+  assert.equal(weeklyReview.iceSessions, 2)
+  assert.equal(weeklyReview.totalTrainingMinutes, 165)
+})
+
+check('falls back invalid date fields to context date', () => {
+  const journal = buildJournalDayPayload({ date: '2026-02-30', dayType: 'training' }, createContext)
+  const session = buildTrainingSessionPayload({ date: 'bad-date', sessionType: 'ice' }, createContext)
+
+  assert.equal(journal.date, '2026-06-25')
+  assert.equal(session.date, '2026-06-25')
+})
+
+check('builds update payloads without createdAt', () => {
+  const payload = buildTrainingSessionPayload({
+    date: '2026-06-25',
+    createdAt: '2020-01-01T00:00:00.000Z',
+    updatedAt: '2020-01-01T00:00:00.000Z',
+    sessionType: 'ice',
+  }, updateContext)
+
+  assert.equal(payload.athleteId, 'athlete-smoke')
+  assert.equal(payload.updatedAt, '2026-06-26T12:00:00.000Z')
+  assert.equal(Object.hasOwn(payload, 'createdAt'), false)
 })
 
 check('aggregates a minimal weekly review sample', () => {

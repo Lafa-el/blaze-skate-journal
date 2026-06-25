@@ -12,8 +12,8 @@ import {
   getCountFromServer,
 } from 'firebase/firestore'
 import { db, COLLECTIONS } from '../firebase/firestore'
-import { JOURNAL_SCHEMA_VERSION } from '../constants/skatingx'
-import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { JOURNAL_SCHEMA_VERSION, SOURCE_APP } from '../constants/skatingx'
+import { buildTrainingSessionPayload } from '../utils/journalPayloadBuilders'
 import { requireUid } from '../utils/validation'
 
 export const sessionService = {
@@ -59,10 +59,14 @@ export const sessionService = {
    */
   async create(data, athleteId) {
     requireUid(athleteId, 'sessionService.create')
-    const ref = await addDoc(collection(db, COLLECTIONS.TRAINING_SESSIONS), {
-      ...data,
-      ...createRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
-    })
+    const ref = await addDoc(
+      collection(db, COLLECTIONS.TRAINING_SESSIONS),
+      buildTrainingSessionPayload(data, {
+        athleteId,
+        sourceApp: SOURCE_APP,
+        schemaVersion: JOURNAL_SCHEMA_VERSION,
+      }),
+    )
     return { docId: ref.id, created: true }
   },
 
@@ -74,10 +78,15 @@ export const sessionService = {
     const session = await this.getById(docId, athleteId)
     if (!session) return null
 
-    await updateDoc(doc(db, COLLECTIONS.TRAINING_SESSIONS, docId), {
-      ...data,
-      ...updateRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
-    })
+    await updateDoc(
+      doc(db, COLLECTIONS.TRAINING_SESSIONS, docId),
+      buildTrainingSessionPayload(data, {
+        athleteId,
+        sourceApp: SOURCE_APP,
+        schemaVersion: JOURNAL_SCHEMA_VERSION,
+        mode: 'update',
+      }),
+    )
     return { docId, created: false }
   },
 

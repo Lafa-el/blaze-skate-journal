@@ -1,22 +1,8 @@
-import { isDateInWeek, isValidDateString } from './dateUtils.js'
-
-export function buildJournalEntryPayload(data = {}) {
-  const date = isValidDateString(data.date) ? data.date : new Date().toISOString().slice(0, 10)
-
-  return {
-    ...data,
-    date,
-  }
-}
-
-export function buildTrainingSessionPayload(data = {}) {
-  const date = isValidDateString(data.date) ? data.date : new Date().toISOString().slice(0, 10)
-
-  return {
-    ...data,
-    date,
-  }
-}
+import { isDateInWeek } from './dateUtils.js'
+export {
+  buildJournalDayPayload as buildJournalEntryPayload,
+  buildTrainingSessionPayload,
+} from './journalPayloadBuilders.js'
 
 function sortTagCounts(tagCounts) {
   return Object.entries(tagCounts)

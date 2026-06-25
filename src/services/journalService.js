@@ -10,8 +10,8 @@ import {
   doc,
 } from 'firebase/firestore'
 import { db, COLLECTIONS } from '../firebase/firestore'
-import { JOURNAL_SCHEMA_VERSION } from '../constants/skatingx'
-import { createRecordMetadata, updateRecordMetadata } from '../utils/firestoreMetadata'
+import { JOURNAL_SCHEMA_VERSION, SOURCE_APP } from '../constants/skatingx'
+import { buildJournalDayPayload } from '../utils/journalPayloadBuilders'
 import { requireUid } from '../utils/validation'
 
 export const journalService = {
@@ -42,24 +42,29 @@ export const journalService = {
     const dateStr = data.date || new Date().toISOString().slice(0, 10)
     const existing = await this.getByDate(dateStr, athleteId)
 
-    const base = {
-      date: dateStr,
-    }
+    const base = { ...data, date: dateStr }
 
     if (existing) {
-      await updateDoc(doc(db, COLLECTIONS.JOURNAL_DAYS, existing.docId), {
-        ...data,
-        ...base,
-        ...updateRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
-      })
+      await updateDoc(
+        doc(db, COLLECTIONS.JOURNAL_DAYS, existing.docId),
+        buildJournalDayPayload(base, {
+          athleteId,
+          sourceApp: SOURCE_APP,
+          schemaVersion: JOURNAL_SCHEMA_VERSION,
+          mode: 'update',
+        }),
+      )
       return { docId: existing.docId, created: false }
     }
 
-    const ref = await addDoc(collection(db, COLLECTIONS.JOURNAL_DAYS), {
-      ...base,
-      ...data,
-      ...createRecordMetadata(athleteId, JOURNAL_SCHEMA_VERSION),
-    })
+    const ref = await addDoc(
+      collection(db, COLLECTIONS.JOURNAL_DAYS),
+      buildJournalDayPayload(base, {
+        athleteId,
+        sourceApp: SOURCE_APP,
+        schemaVersion: JOURNAL_SCHEMA_VERSION,
+      }),
+    )
     return { docId: ref.id, created: true }
   },
 
