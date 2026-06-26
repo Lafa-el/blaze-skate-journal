@@ -6,6 +6,7 @@ import { auth } from '../firebase/auth'
 import { updateProfile as firebaseUpdateProfile } from 'firebase/auth'
 import { ArrowLeft, Save, Loader2, User, Camera } from 'lucide-react'
 import { useLanguage } from '../i18n'
+import { isValidDateString } from '../utils/dateUtils'
 
 const MAX_BIO_LENGTH = 500
 const PROFILE_MEANINGFUL_FIELDS = ['bio', 'level', 'avatarUrl', 'skatingFrom', 'birthday']
@@ -129,6 +130,14 @@ export default function EditProfile() {
       setError(t('editProfile.failedSave'))
       return
     }
+    if (skatingFrom && !isValidDateString(skatingFrom)) {
+      setError(t('editProfile.invalidSkatingFrom'))
+      return
+    }
+    if (birthday && !isValidDateString(birthday)) {
+      setError(t('editProfile.invalidBirthday'))
+      return
+    }
 
     setSaving(true)
     setError('')
@@ -211,7 +220,7 @@ export default function EditProfile() {
             {avatarUrl ? (
               <img
                 src={avatarUrl}
-                alt="Avatar"
+                alt={t('editProfile.avatar')}
                 className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
               />
             ) : (
@@ -266,26 +275,34 @@ export default function EditProfile() {
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <label className="text-sm font-medium text-gray-700">{t('editProfile.skatingFrom')}</label>
           <input
-            type="date"
+            type="text"
+            inputMode="numeric"
             value={skatingFrom}
             onChange={(e) => setSkatingFrom(e.target.value)}
-            placeholder="MM/DD/YYYY"
+            placeholder={t('common.datePlaceholder')}
             className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent appearance-none bg-white"
           />
-          <p className="text-xs text-gray-400 mt-1">{t('editProfile.skatingFromPlaceholder')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('editProfile.skatingFromPlaceholder')} · {t('common.dateHelp')}</p>
+          {skatingFrom && !isValidDateString(skatingFrom) && (
+            <p className="text-xs text-red-500 mt-1">{t('editProfile.invalidSkatingFrom')}</p>
+          )}
         </div>
 
         {/* Birthday */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <label className="text-sm font-medium text-gray-700">{t('editProfile.birthday')}</label>
           <input
-            type="date"
+            type="text"
+            inputMode="numeric"
             value={birthday}
             onChange={(e) => setBirthday(e.target.value)}
-            placeholder="MM/DD/YYYY"
+            placeholder={t('common.datePlaceholder')}
             className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent appearance-none bg-white"
           />
-          <p className="text-xs text-gray-400 mt-1">{t('editProfile.birthdayPlaceholder')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('editProfile.birthdayPlaceholder')} · {t('common.dateHelp')}</p>
+          {birthday && !isValidDateString(birthday) && (
+            <p className="text-xs text-red-500 mt-1">{t('editProfile.invalidBirthday')}</p>
+          )}
         </div>
 
         {/* Email (read-only) */}

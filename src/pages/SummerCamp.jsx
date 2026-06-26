@@ -7,6 +7,7 @@ import {
 import { aggregateCampStats } from '../services/summerCampService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'
+import { isValidDateRange, isValidDateString } from '../utils/dateUtils'
 
 function formatTime(totalSeconds) {
   if (!totalSeconds || totalSeconds === '--') return '--'
@@ -15,10 +16,11 @@ function formatTime(totalSeconds) {
   return mins > 0 ? `${mins}:${secs.padStart(5, '0')}` : `${secs}s`
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr, locale) {
   if (!dateStr) return ''
+  if (!isValidDateString(dateStr)) return dateStr
   const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }
 
 const STORAGE_KEY = 'summer_camp_dates'
@@ -38,7 +40,8 @@ function loadSavedDates() {
 
 export default function SummerCamp() {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
+  const locale = lang === 'zh' ? 'zh-CN' : 'en-US'
   const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -81,6 +84,11 @@ export default function SummerCamp() {
   }, [loadStats])
 
   const handleSaveDates = () => {
+    if (!isValidDateString(tempStart) || !isValidDateString(tempEnd) || !isValidDateRange(tempStart, tempEnd)) {
+      setError(t('summerCamp.invalidDateRange'))
+      return
+    }
+    setError('')
     setCampStart(tempStart)
     setCampEnd(tempEnd)
     setEditDates(false)
@@ -92,7 +100,7 @@ export default function SummerCamp() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">{t('summerCamp.title')}</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {campStart && campEnd ? `${formatDate(campStart)} — ${formatDate(campEnd)}` : ''}
+          {campStart && campEnd ? `${formatDate(campStart, locale)} — ${formatDate(campEnd, locale)}` : ''}
         </p>
       </div>
 
@@ -115,18 +123,22 @@ export default function SummerCamp() {
 
         <div className="flex items-center gap-2 mb-4">
           {editDates ? (
-            <div className="flex-1 flex items-center gap-2">
+            <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2">
               <input
-                type="date"
+                type="text"
+                inputMode="numeric"
                 value={tempStart}
                 onChange={(e) => setTempStart(e.target.value)}
+                placeholder={t('common.datePlaceholder')}
                 className="flex-1 px-3 py-2 rounded-lg bg-white/20 text-white text-sm border border-white/30 placeholder-white/60"
               />
               <span className="text-white/70">{t('summerCamp.to')}</span>
               <input
-                type="date"
+                type="text"
+                inputMode="numeric"
                 value={tempEnd}
                 onChange={(e) => setTempEnd(e.target.value)}
+                placeholder={t('common.datePlaceholder')}
                 className="flex-1 px-3 py-2 rounded-lg bg-white/20 text-white text-sm border border-white/30 placeholder-white/60"
               />
               <button
@@ -156,7 +168,7 @@ export default function SummerCamp() {
               className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors"
             >
               <Calendar className="w-4 h-4" />
-              {campStart && campEnd ? `${formatDate(campStart)} — ${formatDate(campEnd)}` : t('summerCamp.subtitle')}
+              {campStart && campEnd ? `${formatDate(campStart, locale)} — ${formatDate(campEnd, locale)}` : t('summerCamp.subtitle')}
             </button>
           )}
         </div>

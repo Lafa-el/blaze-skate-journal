@@ -77,7 +77,8 @@ function sessionFormFromData(data = {}, selectedDate) {
 
 export default function Sessions() {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
+  const locale = lang === 'zh' ? 'zh-CN' : 'en-US'
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -224,7 +225,7 @@ export default function Sessions() {
   const formatDate = (dateStr) => {
     if (!isValidDateString(dateStr)) return dateStr
     const d = new Date(dateStr + 'T00:00:00')
-    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    return d.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })
   }
 
   const totalMinutes = sessions.reduce((sum, s) => sum + (s.data.durationMinutes || 0), 0)

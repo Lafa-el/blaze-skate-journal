@@ -3,6 +3,7 @@ import { HeartPulse, Moon, Scale, Ruler, AlertTriangle, Smile, Trash2, ChevronLe
 import { bodyStatusService } from '../services/bodyStatusService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'
+import { isValidDateString } from '../utils/dateUtils'
 
 const moodOptions = [
   { value: 1, label: '😫', descKey: 'body.moodOptions.terrible' },
@@ -14,9 +15,16 @@ const moodOptions = [
 ]
 
 const sorenessAreas = [
-  { key: 'quadriceps' }, { key: 'hamstrings' }, { key: 'calves' }, { key: 'lower_back' },
-  { key: 'shoulders' }, { key: 'knees' }, { key: 'ankles' }, { key: 'hips' },
-  { key: 'glutes' }, { key: 'core' },
+  { key: 'quadriceps', labelKey: 'quadriceps' },
+  { key: 'hamstrings', labelKey: 'hamstrings' },
+  { key: 'calves', labelKey: 'calves' },
+  { key: 'lower_back', labelKey: 'lowerBack' },
+  { key: 'shoulders', labelKey: 'shoulders' },
+  { key: 'knees', labelKey: 'knees' },
+  { key: 'ankles', labelKey: 'ankles' },
+  { key: 'hips', labelKey: 'hips' },
+  { key: 'glutes', labelKey: 'glutes' },
+  { key: 'core', labelKey: 'core' },
 ]
 
 export default function Body() {
@@ -25,6 +33,7 @@ export default function Body() {
   const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [status, setStatus] = useState('')
   const [readings, setReadings] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState(null)
@@ -103,7 +112,13 @@ export default function Body() {
 
   const handleSave = async () => {
     if (!uid) return
+    if (!isValidDateString(form.date)) {
+      setError(t('body.invalidDate'))
+      return
+    }
     setLoading(true)
+    setError('')
+    setStatus('')
     try {
       const data = {
         ...form,
@@ -116,10 +131,12 @@ export default function Body() {
       } else {
         await bodyStatusService.create(data, uid)
       }
+      setStatus(t('body.bodySaved'))
       resetForm()
       await loadReadings()
-    } catch {
-      // Error handled silently
+    } catch (e) {
+      setError(t('body.failedSave'))
+      console.error('[Body] Failed to save:', e)
     } finally {
       setLoading(false)
     }
@@ -130,10 +147,17 @@ export default function Body() {
     try {
       await bodyStatusService.delete(docId, uid)
       setDeleteConfirm(null)
+      setStatus(t('body.bodyDeleted'))
       await loadReadings()
-    } catch {
-      // Error handled silently
+    } catch (e) {
+      setError(t('body.failedDelete'))
+      console.error('[Body] Failed to delete:', e)
     }
+  }
+
+  const getSorenessAreaLabel = (area) => {
+    const match = sorenessAreas.find((item) => item.key === area)
+    return match ? t(`body.sorenessOptions.${match.labelKey}`) : area.replace(/_/g, ' ')
   }
 
   return (
@@ -148,6 +172,11 @@ export default function Body() {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+      {status && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700">
+          {status}
         </div>
       )}
 
@@ -166,7 +195,7 @@ export default function Body() {
                       <div>
                         <p className="font-medium text-gray-900">{r.date}</p>
                         <p className="text-xs text-gray-400">
-                          {r.sleepHours}h {t('body.sleep')} · Fatigue {r.fatigueLevel}/{t('common.score')}
+                          {r.sleepHours}h {t('body.sleep')} · {t('body.fatigue')} {r.fatigueLevel}/{t('common.score')}
                         </p>
                       </div>
                     </div>
@@ -207,7 +236,7 @@ export default function Body() {
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {r.sorenessAreas.map((area) => (
                         <span key={area} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                          {area.replace(/_/g, ' ')}
+                          {getSorenessAreaLabel(area)}
                         </span>
                       ))}
                     </div>
@@ -233,6 +262,22 @@ export default function Body() {
             {editId ? t('body.editBody') : t('body.logBody')}
           </h3>
 
+          {/* Date */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('body.date')}</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={form.date}
+              onChange={(e) => updateField('date', e.target.value)}
+              placeholder={t('common.datePlaceholder')}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+            />
+            {!isValidDateString(form.date) && (
+              <p className="text-xs text-red-500 mt-1">{t('body.invalidDate')}</p>
+            )}
+          </div>
+
           {/* Sleep Hours */}
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block flex items-center gap-1.5">
@@ -241,6 +286,7 @@ export default function Body() {
             </label>
             <input
               type="number"
+              inputMode="decimal"
               value={form.sleepHours}
               onChange={(e) => updateField('sleepHours', e.target.value)}
               placeholder={t('body.sleepPlaceholder')}
@@ -305,7 +351,7 @@ export default function Body() {
                       : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                   }`}
                 >
-                  {area.key.replace(/_/g, ' ')}
+                  {t(`body.sorenessOptions.${area.labelKey}`)}
                 </button>
               ))}
             </div>
@@ -320,6 +366,7 @@ export default function Body() {
               </label>
               <input
                 type="number"
+                inputMode="decimal"
                 value={form.bodyWeightLb}
                 onChange={(e) => updateField('bodyWeightLb', e.target.value)}
                 placeholder={t('body.weightPlaceholder')}
@@ -334,6 +381,7 @@ export default function Body() {
               </label>
               <input
                 type="number"
+                inputMode="decimal"
                 value={form.heightCm}
                 onChange={(e) => updateField('heightCm', e.target.value)}
                 placeholder={t('body.heightPlaceholder')}

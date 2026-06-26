@@ -45,8 +45,6 @@ function saveNotifications(notif) {
   }
 }
 
-const defaultNotifications = loadNotifications()
-
 function getNotifSummary(notifState, t) {
   if (!notifState.enabled) return t('settings.notifSummary.allOff')
   const enabledCount = notificationTypes
@@ -205,7 +203,7 @@ export default function Settings() {
                       <item.icon className="w-5 h-5 text-gray-400" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900">{t(item.labelKey)}</p>
-                        <p className="text-xs text-gray-500">Light Mode</p>
+                        <p className="text-xs text-gray-500">{t('settings.appearanceDesc')}</p>
                       </div>
                     </div>
                   </div>
@@ -330,8 +328,8 @@ const settingsGroups = [
   {
     titleKey: 'settings.preferences',
     items: [
-      { type: 'appearance', icon: Palette, labelKey: 'settings.appearance', desc: 'Light Mode' },
-      { type: 'notifications', icon: Bell, labelKey: 'settings.notifications', desc: getNotifSummaryLabel(defaultNotifications) },
+      { type: 'appearance', icon: Palette, labelKey: 'settings.appearance', descKey: 'settings.appearanceDesc' },
+      { type: 'notifications', icon: Bell, labelKey: 'settings.notifications' },
     ],
   },
   {
@@ -349,14 +347,3 @@ const settingsGroups = [
     ],
   },
 ]
-
-// Helper for static notif summary text at group level
-function getNotifSummaryLabel(notifState) {
-  if (!notifState.enabled) return 'All notifications off'
-  const enabledCount = notificationTypes
-    .filter((type) => notifState[type.key])
-    .length
-  if (enabledCount === 0) return 'No notifications enabled'
-  if (enabledCount === notificationTypes.length) return 'All notifications on'
-  return `${enabledCount} of ${notificationTypes.length} enabled`
-}

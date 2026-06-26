@@ -22,6 +22,7 @@ export default function Videos() {
   const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [status, setStatus] = useState('')
   const [videos, setVideos] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState(null)
@@ -108,6 +109,8 @@ export default function Videos() {
   const handleSave = async () => {
     if (!uid) return
     setLoading(true)
+    setError('')
+    setStatus('')
     try {
       const data = {
         title: form.title.trim(),
@@ -124,10 +127,12 @@ export default function Videos() {
       } else {
         await videoService.create(data, uid)
       }
+      setStatus(t('videos.videoSaved'))
       resetForm()
       await loadVideos()
-    } catch {
-      // Error handled silently
+    } catch (e) {
+      setError(t('videos.failedSave'))
+      console.error('[Videos] Failed to save:', e)
     } finally {
       setLoading(false)
     }
@@ -138,9 +143,11 @@ export default function Videos() {
     try {
       await videoService.delete(docId, uid)
       setDeleteConfirm(null)
+      setStatus(t('videos.videoDeleted'))
       await loadVideos()
-    } catch {
-      // Error handled silently
+    } catch (e) {
+      setError(t('videos.failedDelete'))
+      console.error('[Videos] Failed to delete:', e)
     }
   }
 
@@ -163,10 +170,15 @@ export default function Videos() {
           {error}
         </div>
       )}
+      {status && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700">
+          {status}
+        </div>
+      )}
 
       {/* Filters */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Filters</h2>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('videos.filters')}</h2>
         <div className="flex gap-2">
         </div>
         {!showForm && (
@@ -285,7 +297,7 @@ export default function Videos() {
                               {v.technicalTags.map((tag) => (
                                 <span key={tag} className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full flex items-center gap-1">
                                   <Tag className="w-2.5 h-2.5" />
-                                  {tag}
+                                  {t(`videos.technicalTagOptions.${tag}`)}
                                 </span>
                               ))}
                             </div>
@@ -425,7 +437,7 @@ export default function Videos() {
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  {tag.key.replace(/_/g, ' ')}
+                  {t(`videos.technicalTagOptions.${tag.key}`)}
                 </button>
               ))}
             </div>

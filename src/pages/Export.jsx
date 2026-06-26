@@ -6,6 +6,7 @@ import {
 import { exportData } from '../services/exportService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'
+import { isValidDateRange, isValidDateString } from '../utils/dateUtils'
 
 const EXPORT_SCOPES = [
   { value: 'all', label: 'allData', icon: BookOpen, description: 'allDataDesc' },
@@ -42,16 +43,36 @@ export default function Export() {
 
   const canExport = () => {
     if (scope === 'all') return true
-    if (scope === 'dateRange') return dateStart && dateEnd
-    if (scope === 'summerCamp') return campStart && campEnd
-    if (scope === 'singleWeek') return weekStart
+    if (scope === 'dateRange') return isValidDateRange(dateStart, dateEnd)
+    if (scope === 'summerCamp') return isValidDateRange(campStart, campEnd)
+    if (scope === 'singleWeek') return isValidDateString(weekStart)
     return false
   }
 
+  const getExportDateError = () => {
+    if (scope === 'dateRange') {
+      if (!dateStart || !dateEnd) return t('export.fillDates')
+      if (!isValidDateString(dateStart) || !isValidDateString(dateEnd)) return t('export.invalidDates')
+      if (!isValidDateRange(dateStart, dateEnd)) return t('common.endDateBeforeStart')
+    }
+    if (scope === 'summerCamp') {
+      if (!campStart || !campEnd) return t('export.fillDates')
+      if (!isValidDateString(campStart) || !isValidDateString(campEnd)) return t('export.invalidDates')
+      if (!isValidDateRange(campStart, campEnd)) return t('common.endDateBeforeStart')
+    }
+    if (scope === 'singleWeek') {
+      if (!weekStart) return t('export.fillDates')
+      if (!isValidDateString(weekStart)) return t('export.invalidDates')
+    }
+    return ''
+  }
+  const dateError = getExportDateError()
+
   const handleExport = async () => {
     if (!user) return
-    if (!canExport()) {
-      setError(t('export.fillDates'))
+    const dateError = getExportDateError()
+    if (dateError) {
+      setError(dateError)
       return
     }
 
@@ -155,46 +176,56 @@ export default function Export() {
           <div>
             <label className="text-xs text-gray-500 mb-1 block">{t('export.startDate')}</label>
             <input
-              type="date"
+              type="text"
+              inputMode="numeric"
               value={dateStart}
               onChange={(e) => setDateStart(e.target.value)}
+              placeholder={t('common.datePlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">{t('export.endDate')}</label>
             <input
-              type="date"
+              type="text"
+              inputMode="numeric"
               value={dateEnd}
               onChange={(e) => setDateEnd(e.target.value)}
+              placeholder={t('common.datePlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
+          {dateError && <p className="text-xs text-red-500">{dateError}</p>}
         </div>
       )}
 
       {/* Summer Camp Options */}
       {scope === 'summerCamp' && (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3">
-          <p className="text-xs font-medium text-gray-500">{t('export.summerCamp2026')} Period</p>
+          <p className="text-xs font-medium text-gray-500">{t('export.summerCamp2026')} {t('export.period')}</p>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">{t('export.campStart')}</label>
             <input
-              type="date"
+              type="text"
+              inputMode="numeric"
               value={campStart}
               onChange={(e) => setCampStart(e.target.value)}
+              placeholder={t('common.datePlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">{t('export.campEnd')}</label>
             <input
-              type="date"
+              type="text"
+              inputMode="numeric"
               value={campEnd}
               onChange={(e) => setCampEnd(e.target.value)}
+              placeholder={t('common.datePlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
+          {dateError && <p className="text-xs text-red-500">{dateError}</p>}
         </div>
       )}
 
@@ -203,11 +234,14 @@ export default function Export() {
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <p className="text-xs font-medium text-gray-500 mb-2">{t('export.weekStart')}</p>
           <input
-            type="date"
+            type="text"
+            inputMode="numeric"
             value={weekStart}
             onChange={(e) => setWeekStart(e.target.value)}
+            placeholder={t('common.datePlaceholder')}
             className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
           />
+          {dateError && <p className="text-xs text-red-500 mt-2">{dateError}</p>}
         </div>
       )}
 

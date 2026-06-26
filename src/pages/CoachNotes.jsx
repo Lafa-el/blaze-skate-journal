@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { Plus, Bookmark, Trash2, Flag, Edit3 } from 'lucide-react'
 import { coachNoteService } from '../services/coachNoteService'
 import { useAuth } from '../contexts/AuthContext'
+import { useLanguage } from '../i18n'
+import { isValidDateString } from '../utils/dateUtils'
 
 const priorityOptions = [
-  { value: 'high', label: 'High', color: 'bg-red-500' },
-  { value: 'medium', label: 'Medium', color: 'bg-amber-500' },
-  { value: 'low', label: 'Low', color: 'bg-emerald-500' },
+  { value: 'high', labelKey: 'coachNotes.priorityOptions.high', color: 'bg-red-500' },
+  { value: 'medium', labelKey: 'coachNotes.priorityOptions.medium', color: 'bg-amber-500' },
+  { value: 'low', labelKey: 'coachNotes.priorityOptions.low', color: 'bg-emerald-500' },
 ]
 
 const defaultTechnicalTags = [
@@ -19,9 +21,11 @@ const defaultTechnicalTags = [
 
 export default function CoachNotes() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [status, setStatus] = useState('')
   const [notes, setNotes] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState(null)
@@ -45,10 +49,10 @@ export default function CoachNotes() {
       const all = await coachNoteService.list({}, uid)
       setNotes(all)
     } catch (e) {
-      setError('Failed to load coach notes. Check your connection or Firebase config.')
+      setError(t('coachNotes.failedLoadNotes'))
       console.error('[CoachNotes] Failed to load:', e)
     }
-  }, [uid])
+  }, [t, uid])
 
   // Load notes
   useEffect(() => {
@@ -97,17 +101,25 @@ export default function CoachNotes() {
 
   const handleSave = async () => {
     if (!uid) return
+    if (!isValidDateString(form.date)) {
+      setError(t('common.invalidDate'))
+      return
+    }
     setLoading(true)
+    setError('')
+    setStatus('')
     try {
       if (editId) {
         await coachNoteService.update(editId, form, uid)
       } else {
         await coachNoteService.create(form, uid)
       }
+      setStatus(t('coachNotes.noteSaved'))
       resetForm()
       await loadNotes()
-    } catch {
-      // Error handled silently
+    } catch (e) {
+      setError(t('coachNotes.failedSaveNote'))
+      console.error('[CoachNotes] Failed to save:', e)
     } finally {
       setLoading(false)
     }
@@ -118,9 +130,11 @@ export default function CoachNotes() {
     try {
       await coachNoteService.delete(docId, uid)
       setDeleteConfirm(null)
+      setStatus(t('coachNotes.noteDeleted'))
       await loadNotes()
-    } catch {
-      // Error handled silently
+    } catch (e) {
+      setError(t('coachNotes.failedDeleteNote'))
+      console.error('[CoachNotes] Failed to delete:', e)
     }
   }
 
@@ -133,14 +147,19 @@ export default function CoachNotes() {
     <div className="p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Coach Notes</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Feedback & coaching points</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('coachNotes.title')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('coachNotes.subtitle')}</p>
       </div>
 
       {/* Error Banner */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+      {status && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700">
+          {status}
         </div>
       )}
 
@@ -156,32 +175,32 @@ export default function CoachNotes() {
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-gray-900">{n.coachName || 'Anonymous'}</span>
+                        <span className="font-semibold text-gray-900">{n.coachName || t('common.anonymous')}</span>
                         <span className="text-xs text-gray-400">{n.date || ''}</span>
                       </div>
                       <p className="text-xs text-gray-500 flex items-center gap-1">
                         <Flag className="w-3 h-3" />
-                        {n.priority}
+                        {t(`coachNotes.priorityOptions.${n.priority || 'medium'}`)}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => startEdit(note)}
                         className="p-1.5 rounded-lg hover:bg-gray-100"
-                        title="Edit"
+                        title={t('common.edit')}
                       >
                         <Edit3 className="w-4 h-4 text-gray-400" />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(note.docId)}
                         className="p-1.5 rounded-lg hover:bg-red-50"
-                        title="Delete"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="w-4 h-4 text-red-400" />
                       </button>
                       <button
                         className="p-1.5 rounded-lg hover:bg-gray-100"
-                        title="Bookmark"
+                        title={t('common.bookmark')}
                       >
                         <Bookmark className="w-4 h-4 text-gray-400" />
                       </button>
@@ -190,7 +209,7 @@ export default function CoachNotes() {
 
                   <p className="text-sm text-gray-600 leading-relaxed mb-3">{n.note}</p>
 
-                  {n.technicalTags.length > 0 && (
+                  {n.technicalTags && n.technicalTags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {n.technicalTags.map((tag) => (
                         <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
@@ -202,13 +221,13 @@ export default function CoachNotes() {
 
                   {n.followUpTomorrow && (
                     <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5">
-                      <p className="text-xs font-medium text-amber-800 mb-0.5">Follow Up Tomorrow</p>
+                      <p className="text-xs font-medium text-amber-800 mb-0.5">{t('coachNotes.followUpTomorrow')}</p>
                       <p className="text-xs text-amber-700">{n.followUpTomorrow}</p>
                     </div>
                   )}
 
                   {n.linkedSessionId && (
-                    <p className="text-xs text-gray-400 mt-2">Linked Session: {n.linkedSessionId}</p>
+                    <p className="text-xs text-gray-400 mt-2">{t('coachNotes.linkedSessionLabel')} {n.linkedSessionId}</p>
                   )}
                 </div>
               </div>
@@ -220,7 +239,7 @@ export default function CoachNotes() {
       {notes.length === 0 && !showForm && (
         <div className="text-center py-8 text-gray-400">
           <Bookmark className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No coach notes yet</p>
+          <p className="text-sm">{t('coachNotes.noCoachNotes')}</p>
         </div>
       )}
 
@@ -228,24 +247,40 @@ export default function CoachNotes() {
       {showForm ? (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-4">
           <h3 className="font-semibold text-gray-900">
-            {editId ? 'Edit Note' : 'Add Note'}
+            {editId ? t('coachNotes.editNote') : t('coachNotes.addNote')}
           </h3>
+
+          {/* Date */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('coachNotes.date')}</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={form.date}
+              onChange={(e) => updateField('date', e.target.value)}
+              placeholder={t('common.datePlaceholder')}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+            />
+            {!isValidDateString(form.date) && (
+              <p className="text-xs text-red-500 mt-1">{t('common.invalidDate')}</p>
+            )}
+          </div>
 
           {/* Coach Name */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Coach Name</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('coachNotes.coachName')}</label>
             <input
               type="text"
               value={form.coachName}
               onChange={(e) => updateField('coachName', e.target.value)}
-              placeholder="e.g. Song Weilong"
+              placeholder={t('coachNotes.coachNamePlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
 
           {/* Priority */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Priority</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('coachNotes.priority')}</label>
             <div className="flex gap-1.5">
               {priorityOptions.map((p) => (
                 <button
@@ -257,7 +292,7 @@ export default function CoachNotes() {
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  {p.label}
+                  {t(p.labelKey)}
                 </button>
               ))}
             </div>
@@ -265,11 +300,11 @@ export default function CoachNotes() {
 
           {/* Note */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Coach Feedback</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('coachNotes.coachFeedback')}</label>
             <textarea
               value={form.note}
               onChange={(e) => updateField('note', e.target.value)}
-              placeholder="What did the coach say?"
+              placeholder={t('coachNotes.coachFeedbackPlaceholder')}
               rows={4}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
             />
@@ -277,7 +312,7 @@ export default function CoachNotes() {
 
           {/* Technical Tags */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Technical Tags</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('coachNotes.technicalTags')}</label>
             <div className="flex flex-wrap gap-1.5">
               {defaultTechnicalTags.map((tag) => (
                 <button
@@ -297,11 +332,11 @@ export default function CoachNotes() {
 
           {/* Follow Up Tomorrow */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Follow Up Tomorrow (optional)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('coachNotes.followUpTomorrow')}</label>
             <textarea
               value={form.followUpTomorrow}
               onChange={(e) => updateField('followUpTomorrow', e.target.value)}
-              placeholder="What to work on next session?"
+              placeholder={t('coachNotes.followUpPlaceholder')}
               rows={2}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2 resize-none"
             />
@@ -309,12 +344,12 @@ export default function CoachNotes() {
 
           {/* Linked Session ID */}
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Linked Session ID (optional)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('coachNotes.linkedSession')}</label>
             <input
               type="text"
               value={form.linkedSessionId}
               onChange={(e) => updateField('linkedSessionId', e.target.value)}
-              placeholder="Session doc ID"
+              placeholder={t('coachNotes.linkedSessionPlaceholder')}
               className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
             />
           </div>
@@ -326,13 +361,13 @@ export default function CoachNotes() {
               disabled={loading}
               className="flex-1 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
             >
-              {loading ? 'Saving...' : editId ? 'Update' : 'Save Note'}
+              {loading ? t('common.saving') : editId ? t('common.update') : t('coachNotes.saveNote')}
             </button>
             <button
               onClick={resetForm}
               className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -342,7 +377,7 @@ export default function CoachNotes() {
           className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          Add Note
+          {t('coachNotes.addNote')}
         </button>
       )}
 
@@ -350,20 +385,20 @@ export default function CoachNotes() {
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold text-gray-900 mb-2">Delete Note?</h3>
-            <p className="text-sm text-gray-600 mb-4">This action cannot be undone.</p>
+            <h3 className="font-semibold text-gray-900 mb-2">{t('coachNotes.deleteNote')}</h3>
+            <p className="text-sm text-gray-600 mb-4">{t('coachNotes.deleteNoteConfirm')}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => handleDelete(deleteConfirm)}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-lg"
               >
-                Delete
+                {t('common.delete')}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 rounded-lg"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>

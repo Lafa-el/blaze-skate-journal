@@ -29,6 +29,12 @@ export function isValidDateString(dateStr) {
   return typeof dateStr === 'string' && toLocalDate(dateStr) !== null
 }
 
+export function isValidDateRange(startDateStr, endDateStr) {
+  const start = toLocalDate(startDateStr)
+  const end = toLocalDate(endDateStr)
+  return Boolean(start && end && start <= end)
+}
+
 export function getWeekStart(dateStr) {
   const date = toLocalDate(dateStr)
   if (!date) return ''

@@ -3,6 +3,7 @@ import { Trophy, Plus, Trash2, ChevronLeft, Target } from 'lucide-react'
 import { performanceService } from '../services/performanceService'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../i18n'
+import { isValidDateString } from '../utils/dateUtils'
 
 const eventTypes = [
   { value: 'single_lap', labelKey: 'performance.eventTypes.singleLap' },
@@ -20,6 +21,7 @@ export default function Performance() {
   const uid = user?.uid
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [status, setStatus] = useState('')
   const [records, setRecords] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState(null)
@@ -102,9 +104,29 @@ export default function Performance() {
     return mins > 0 ? `${mins}:${secs.padStart(5, '0')}` : `${secs}s`
   }
 
+  const getEventLabel = (event) => {
+    const option = eventTypes.find((item) => item.value === event)
+    return option ? t(option.labelKey) : (event || t('common.unknown'))
+  }
+
+  const getContextLabel = (context) => {
+    const contextLabels = {
+      training_test: t('performance.contextOptions.training'),
+      competition: t('performance.contextOptions.competition'),
+      exhibition: t('performance.contextOptions.exhibition'),
+    }
+    return contextLabels[context] || ''
+  }
+
   const handleSave = async () => {
     if (!uid) return
+    if (!isValidDateString(form.date)) {
+      setError(t('performance.invalidDate'))
+      return
+    }
     setLoading(true)
+    setError('')
+    setStatus('')
     try {
       const timeNum = form.timeSeconds ? Number(form.timeSeconds) : 0
       const allRecords = await performanceService.list({}, uid)
@@ -131,10 +153,12 @@ export default function Performance() {
       } else {
         await performanceService.create(data, uid)
       }
+      setStatus(t('performance.recordSaved'))
       resetForm()
       await loadRecords()
-    } catch {
-      // Error handled silently
+    } catch (e) {
+      setError(t('performance.failedSave'))
+      console.error('[Performance] Failed to save:', e)
     } finally {
       setLoading(false)
     }
@@ -145,9 +169,11 @@ export default function Performance() {
     try {
       await performanceService.delete(docId, uid)
       setDeleteConfirm(null)
+      setStatus(t('performance.recordDeleted'))
       await loadRecords()
-    } catch {
-      // Error handled silently
+    } catch (e) {
+      setError(t('performance.failedDelete'))
+      console.error('[Performance] Failed to delete:', e)
     }
   }
 
@@ -166,6 +192,11 @@ export default function Performance() {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+      {status && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700">
+          {status}
         </div>
       )}
 
@@ -228,7 +259,7 @@ export default function Performance() {
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-900">{event ? event.replace(/_/g, ' ') : t('common.unknown')}</h3>
+                        <h3 className="font-semibold text-gray-900">{getEventLabel(event)}</h3>
                         {isPB && (
                           <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
                             <Trophy className="w-3 h-3" />
@@ -240,7 +271,7 @@ export default function Performance() {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-gray-900">{formatTime(time)}</p>
-                      <p className="text-xs text-gray-400">{r.context ? r.context.replace(/_/g, ' ') : ''}</p>
+                      <p className="text-xs text-gray-400">{getContextLabel(r.context)}</p>
                     </div>
                     <div className="flex items-center gap-1 ml-2">
                       <button
@@ -284,6 +315,22 @@ export default function Performance() {
             {editId ? t('performance.editRecord') : t('performance.addRecord')}
           </h3>
 
+          {/* Date */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">{t('performance.date')}</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={form.date}
+              onChange={(e) => updateField('date', e.target.value)}
+              placeholder={t('common.datePlaceholder')}
+              className="w-full rounded-lg border-gray-200 bg-gray-50 text-sm px-3 py-2"
+            />
+            {!isValidDateString(form.date) && (
+              <p className="text-xs text-red-500 mt-1">{t('performance.invalidDate')}</p>
+            )}
+          </div>
+
           {/* Event Type */}
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">{t('performance.eventType')}</label>
@@ -309,6 +356,7 @@ export default function Performance() {
             <label className="text-xs font-medium text-gray-500 mb-1 block">{t('performance.time')}</label>
             <input
               type="number"
+              inputMode="decimal"
               value={form.timeSeconds}
               onChange={(e) => updateField('timeSeconds', e.target.value)}
               placeholder={t('performance.timePlaceholder')}

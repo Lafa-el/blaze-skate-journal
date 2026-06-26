@@ -119,7 +119,7 @@ export default function Dashboard() {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User'
+  const displayName = user?.displayName || user?.email?.split('@')[0] || t('common.anonymous')
 
   const getSkatingAge = () => {
     if (!birthday) return null
@@ -145,14 +145,14 @@ export default function Dashboard() {
 
   const getAgeCategory = () => {
     if (skatingAge === null) return null
-    if (skatingAge <= 6) return 'Pre-Novice'
-    if (skatingAge <= 8) return 'Junior F (7/8)'
-    if (skatingAge <= 10) return 'Junior E (9/10)'
-    if (skatingAge <= 12) return 'Junior D (11/12)'
-    if (skatingAge <= 14) return 'Junior C (13/14)'
-    if (skatingAge <= 16) return 'Junior B (15/16)'
-    if (skatingAge <= 18) return 'Junior A (17/18)'
-    return 'Senior (18+)'
+    if (skatingAge <= 6) return t('settings.ageCategories.preNovice')
+    if (skatingAge <= 8) return t('settings.ageCategories.juniorF')
+    if (skatingAge <= 10) return t('settings.ageCategories.juniorE')
+    if (skatingAge <= 12) return t('settings.ageCategories.juniorD')
+    if (skatingAge <= 14) return t('settings.ageCategories.juniorC')
+    if (skatingAge <= 16) return t('settings.ageCategories.juniorB')
+    if (skatingAge <= 18) return t('settings.ageCategories.juniorA')
+    return t('settings.ageCategories.senior')
   }
 
   const ageCategory = getAgeCategory()

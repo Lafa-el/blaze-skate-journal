@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 
-import { getWeekStart, isValidDateString } from '../src/utils/dateUtils.js'
+import { getWeekStart, isValidDateRange, isValidDateString } from '../src/utils/dateUtils.js'
 import {
   buildCalendarDaySummary,
   buildWeeklySummary,
@@ -44,6 +44,12 @@ check('validates YYYY-MM-DD date strings', () => {
   assert.equal(isValidDateString('2026-06-25'), true)
   assert.equal(isValidDateString('2026-6-25'), false)
   assert.equal(isValidDateString('2026-02-30'), false)
+})
+
+check('validates YYYY-MM-DD date ranges', () => {
+  assert.equal(isValidDateRange('2026-06-01', '2026-06-30'), true)
+  assert.equal(isValidDateRange('2026-06-30', '2026-06-01'), false)
+  assert.equal(isValidDateRange('2026-06-01', 'bad-date'), false)
 })
 
 check('calculates Monday week starts', () => {
