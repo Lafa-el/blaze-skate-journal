@@ -201,3 +201,25 @@ Do not run this against production unless explicitly approved.
 - There is no real Firebase E2E automated test suite.
 - This is a JavaScript project and does not have TypeScript typecheck.
 - `dev-dist` is ignored in `.gitignore` and `git ls-files dev-dist` returned no tracked files in Step 7 checks.
+
+## Release Decision
+
+Status: Conditional Pass / V1.0 Release Candidate
+
+Release blockers: None found in read-only RC QA.
+
+Required before production release:
+
+1. Manual Firebase QA with a dedicated test account.
+2. Real-device iPhone Safari / PWA QA pass.
+
+Non-blocking warnings:
+
+- Vite chunk > 500 kB warning.
+- Node `module.register()` deprecation warning.
+- No automated real Firebase E2E suite.
+- JavaScript project, no TypeScript typecheck.
+
+Final recommendation:
+
+Proceed to V1.0 production release if manual Firebase QA and real-device mobile QA pass without blocking issues.
