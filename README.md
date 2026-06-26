@@ -1,16 +1,64 @@
-# React + Vite
+# Blaze Skate Journal
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Blaze Skate Journal is a React/Vite/Firebase app for short track skating training logs. It supports Daily Journal, Training Sessions, Calendar history, Weekly Review, Coach Notes, Performance records, Body status, Video references, Summer Camp tracking, Export, profile settings, and bilingual English/Chinese UI.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React
+- Vite
+- Firebase Auth
+- Firestore
+- Firebase Storage configuration
+- Vite PWA
+- ESLint
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run dev
+npm run lint
+npm run build
+npm run smoke:journal
+npm run preview
+```
 
-## Expanding the ESLint configuration
+## QA Commands
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Run these before release or handoff:
+
+```bash
+npm run lint
+npm run build
+npm run smoke:journal
+```
+
+Expected result:
+
+- `npm run lint` passes with 0 errors.
+- `npm run build` completes successfully.
+- `npm run smoke:journal` passes local pure-logic checks without Firebase or network access.
+
+Known build warnings:
+
+- Vite may warn that the main JavaScript chunk is larger than 500 kB.
+- Node may print a `module.register()` deprecation warning from the current toolchain.
+
+## Firebase Notes
+
+V1.0 keeps the existing Firestore collection paths and ownership model:
+
+```text
+athleteId == Firebase Auth user.uid
+```
+
+Do not change Firebase project configuration, Firestore rules, Storage rules, or Firestore indexes without a separate review.
+
+## Documentation
+
+Key V1.0 docs live in `docs/`:
+
+- `journal-v1-data-model.md`
+- `journal-v1-final-qa-checklist.md`
+- `journal-v1-user-guide.md`
+- `journal-v1-release-notes.md`
+- `journal-v1-final-development-summary.md`
