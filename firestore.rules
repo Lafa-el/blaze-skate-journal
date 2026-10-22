@@ -6,24 +6,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function ownsIncomingAthleteData() {
-      return signedIn()
-        && request.resource.data.athleteId == request.auth.uid;
-    }
-
-    function ownsExistingAthleteData() {
-      return signedIn()
-        && resource.data.athleteId == request.auth.uid;
-    }
-
-    function keepsAthleteOwnerStable() {
-      return request.resource.data.athleteId == resource.data.athleteId;
-    }
-
     match /athletes/{docId} {
-      allow create: if signedIn()
-        && request.auth.uid == docId
-        && request.resource.data.athleteId == docId;
       // getAthleteProfile reads athletes/{uid}. The id and athleteId must both be this user.
       allow get: if signedIn()
         && request.auth.uid == docId
@@ -32,78 +15,38 @@ service cloud.firestore {
       // constrain the document id. A docId check here would reject that query for the owner.
       allow list: if signedIn()
         && resource.data.athleteId == request.auth.uid;
-      allow delete: if signedIn()
-        && request.auth.uid == docId
-        && resource.data.athleteId == docId;
-      allow update: if signedIn()
-        && request.auth.uid == docId
-        && resource.data.athleteId == docId
-        && request.resource.data.athleteId == docId
-        && keepsAthleteOwnerStable();
     }
 
     match /journal_days/{docId} {
-      allow create: if ownsIncomingAthleteData();
-      allow read, delete: if ownsExistingAthleteData();
-      allow update: if ownsExistingAthleteData()
-        && ownsIncomingAthleteData()
-        && keepsAthleteOwnerStable();
+      allow get, list: if signedIn() && resource.data.athleteId == request.auth.uid;
     }
 
     match /training_sessions/{docId} {
-      allow create: if ownsIncomingAthleteData();
-      allow read, delete: if ownsExistingAthleteData();
-      allow update: if ownsExistingAthleteData()
-        && ownsIncomingAthleteData()
-        && keepsAthleteOwnerStable();
+      allow get, list: if signedIn() && resource.data.athleteId == request.auth.uid;
     }
 
     match /coach_notes/{docId} {
-      allow create: if ownsIncomingAthleteData();
-      allow read, delete: if ownsExistingAthleteData();
-      allow update: if ownsExistingAthleteData()
-        && ownsIncomingAthleteData()
-        && keepsAthleteOwnerStable();
+      allow get, list: if signedIn() && resource.data.athleteId == request.auth.uid;
     }
 
     match /body_status/{docId} {
-      allow create: if ownsIncomingAthleteData();
-      allow read, delete: if ownsExistingAthleteData();
-      allow update: if ownsExistingAthleteData()
-        && ownsIncomingAthleteData()
-        && keepsAthleteOwnerStable();
+      allow get, list: if signedIn() && resource.data.athleteId == request.auth.uid;
     }
 
     match /performance_records/{docId} {
-      allow create: if ownsIncomingAthleteData();
-      allow read, delete: if ownsExistingAthleteData();
-      allow update: if ownsExistingAthleteData()
-        && ownsIncomingAthleteData()
-        && keepsAthleteOwnerStable();
+      allow get, list: if signedIn() && resource.data.athleteId == request.auth.uid;
     }
 
     match /video_refs/{docId} {
-      allow create: if ownsIncomingAthleteData();
-      allow read, delete: if ownsExistingAthleteData();
-      allow update: if ownsExistingAthleteData()
-        && ownsIncomingAthleteData()
-        && keepsAthleteOwnerStable();
+      allow get, list: if signedIn() && resource.data.athleteId == request.auth.uid;
     }
 
     match /weekly_reviews/{docId} {
-      allow create: if ownsIncomingAthleteData();
-      allow read, delete: if ownsExistingAthleteData();
-      allow update: if ownsExistingAthleteData()
-        && ownsIncomingAthleteData()
-        && keepsAthleteOwnerStable();
+      allow get, list: if signedIn() && resource.data.athleteId == request.auth.uid;
     }
 
     match /milestones/{docId} {
-      allow create: if ownsIncomingAthleteData();
-      allow read, delete: if ownsExistingAthleteData();
-      allow update: if ownsExistingAthleteData()
-        && ownsIncomingAthleteData()
-        && keepsAthleteOwnerStable();
+      allow get, list: if signedIn() && resource.data.athleteId == request.auth.uid;
     }
   }
 }
