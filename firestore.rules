@@ -24,7 +24,15 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.auth.uid == docId
         && request.resource.data.athleteId == docId;
-      allow read, delete: if signedIn()
+      // getAthleteProfile reads athletes/{uid}. The id and athleteId must both be this user.
+      allow get: if signedIn()
+        && request.auth.uid == docId
+        && resource.data.athleteId == docId;
+      // getLegacyAthleteProfilesByAthleteId queries where athleteId == uid and does not
+      // constrain the document id. A docId check here would reject that query for the owner.
+      allow list: if signedIn()
+        && resource.data.athleteId == request.auth.uid;
+      allow delete: if signedIn()
         && request.auth.uid == docId
         && resource.data.athleteId == docId;
       allow update: if signedIn()
